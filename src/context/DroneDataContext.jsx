@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { io } from 'socket.io-client';
 
 const DroneDataContext = createContext();
@@ -14,10 +14,16 @@ const socket = io(socketUrl, {
 });
 
 export function DroneDataProvider({ children }) {
+  useEffect(() => {
+    console.log("DroneDataProvider mounted");
+    return () => console.log("DroneDataProvider unmounted");
+  }, []);
+
   // Connection states
   const [backendConnected, setBackendConnected] = useState(socket.connected);
   const [esp32ConnectionState, setEsp32ConnectionState] = useState('Offline'); // Connected, Warning, Offline
   const [lastReceivedTimestamp, setLastReceivedTimestamp] = useState(null);
+  const lastReceivedRef = useRef(null);
 
   // Live Data states
   const [data, setData] = useState({
@@ -83,7 +89,9 @@ export function DroneDataProvider({ children }) {
     // Sensor update event
     socket.on('sensor_update', (sensorData) => {
       setEsp32ConnectionState('Connected');
-      setLastReceivedTimestamp(new Date());
+      const now = new Date();
+      setLastReceivedTimestamp(now);
+      lastReceivedRef.current = now;
       setSamplesCollected(prev => prev + 1);
       addActivity('Sensor Reading Received', 'info');
 
@@ -171,16 +179,19 @@ export function DroneDataProvider({ children }) {
   useEffect(() => {
     const timer = setInterval(() => {
       // 1. ESP32 Timeout Logic
-      if (lastReceivedTimestamp) {
-        const timeSinceLastMsg = new Date() - lastReceivedTimestamp;
+      if (lastReceivedRef.current) {
+        const timeSinceLastMsg = new Date() - lastReceivedRef.current;
         
-        if (timeSinceLastMsg > 30000 && esp32ConnectionState !== 'Offline') {
-          setEsp32ConnectionState('Offline');
-          addActivity('ESP32 Offline (Timeout > 30s)', 'critical');
-        } else if (timeSinceLastMsg > 10000 && timeSinceLastMsg <= 30000 && esp32ConnectionState !== 'Warning') {
-          setEsp32ConnectionState('Warning');
-          addActivity('ESP32 Warning (No data > 10s)', 'warning');
-        }
+        setEsp32ConnectionState(prevState => {
+          if (timeSinceLastMsg > 30000 && prevState !== 'Offline') {
+            addActivity('ESP32 Offline (Timeout > 30s)', 'critical');
+            return 'Offline';
+          } else if (timeSinceLastMsg > 10000 && timeSinceLastMsg <= 30000 && prevState !== 'Warning') {
+            addActivity('ESP32 Warning (No data > 10s)', 'warning');
+            return 'Warning';
+          }
+          return prevState;
+        });
       }
 
       // 2. Simulated Telemetry Logic (if no real telemetry arrives)
@@ -211,7 +222,7 @@ export function DroneDataProvider({ children }) {
 
     }, 2000);
     return () => clearInterval(timer);
-  }, [lastReceivedTimestamp, esp32ConnectionState, addActivity]);
+  }, [addActivity]);
 
   const getExportHistory = useCallback(() => snapshotBuffer.current, []);
   const clearAlerts = useCallback(() => setAlerts([]), []);
@@ -221,9 +232,9 @@ export function DroneDataProvider({ children }) {
   // Map old esp32Connected to the new state
   const esp32Connected = esp32ConnectionState === 'Connected' || esp32ConnectionState === 'Warning';
 
-  const value = {
+  const value = useMemo(() => ({
     data,
-    history, 
+    history: sensorHistory, // Ensure history maps to sensorHistory if components use it
     alerts,
     pathHistory,
     sensorHistory,
@@ -237,7 +248,22 @@ export function DroneDataProvider({ children }) {
     missionStartTime,
     getExportHistory,
     clearAlerts,
-  };
+  }), [
+    data,
+    alerts,
+    pathHistory,
+    sensorHistory,
+    isConnected,
+    backendConnected,
+    esp32Connected,
+    esp32ConnectionState,
+    lastReceivedTimestamp,
+    activityFeed,
+    samplesCollected,
+    missionStartTime,
+    getExportHistory,
+    clearAlerts,
+  ]);
 
   return (
     <DroneDataContext.Provider value={value}>

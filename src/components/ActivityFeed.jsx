@@ -18,7 +18,7 @@ export default function ActivityFeed() {
 
   return (
     <motion.div
-      className="glass card-sensor p-5 flex flex-col gap-4 h-full"
+      className="glass card-sensor flex flex-col gap-4 h-full"
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}

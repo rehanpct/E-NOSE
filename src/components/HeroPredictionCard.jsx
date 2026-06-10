@@ -51,43 +51,42 @@ export default function HeroPredictionCard() {
       variants={pulseVariant}
       initial="initial"
       animate="animate"
-      className="glass-strong card-sensor mb-6"
+      className="glass-strong card-sensor mb-4"
       style={{
-        border: `1.5px solid ${borderColor}`,
-        background: `linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)`,
+        border: `1px solid ${borderColor}`,
       }}
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className="bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
-          <span className="text-[10px] uppercase tracking-wider text-blue-600 font-bold flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            LIVE AI INFERENCE
+      <div className="flex justify-between items-center mb-3">
+        <div className="bg-blue-500/10 dark:bg-blue-900/30 px-3 py-1 rounded-sm border border-blue-500/20">
+          <span className="text-[10px] uppercase tracking-widest text-blue-700 dark:text-blue-400 font-bold flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+            AI INFERENCE STATUS
           </span>
         </div>
         
-        <div className={`px-4 py-1.5 rounded-full flex items-center gap-2 font-bold text-sm ${
-          riskLevel === 'HIGH' ? 'bg-red-500/10 text-red-600 border border-red-500/20' :
-          riskLevel === 'MODERATE' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
-          'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+        <div className={`px-3 py-1 rounded-sm flex items-center gap-1.5 font-bold text-xs ${
+          riskLevel === 'HIGH' ? 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20' :
+          riskLevel === 'MODERATE' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20' :
+          'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
         }`}>
-          <Icon size={16} />
-          RISK: {riskLevel}
+          <Icon size={14} />
+          {riskLevel} RISK
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center">
         
         {/* Main Prediction */}
-        <div className="lg:col-span-2 flex items-center justify-between">
+        <div className="lg:col-span-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
           <div>
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-1">Detected Gas</h2>
+            <h2 className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest mb-1">Detected Class</h2>
             <AnimatePresence mode="popLayout">
               <motion.div
                 key={gas}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="text-5xl lg:text-7xl font-black text-slate-800 tracking-tight"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="text-4xl lg:text-5xl font-black tracking-tight"
                 style={{
                   background: gas === 'Clean_Air' ? 'linear-gradient(135deg, #10b981, #059669)' :
                              riskLevel === 'HIGH' ? 'linear-gradient(135deg, #ef4444, #b91c1c)' :
@@ -99,23 +98,24 @@ export default function HeroPredictionCard() {
                 {gas.replace('_', ' ')}
               </motion.div>
             </AnimatePresence>
-            <p className="mt-4 font-medium text-slate-600">
-              <span className="text-slate-400">Action:</span> {actionMessage}
+            <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[10px] text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider">Action</span>
+              {actionMessage}
             </p>
           </div>
 
-          <div className="relative w-32 h-32 flex items-center justify-center">
+          <div className="relative w-24 h-24 flex items-center justify-center flex-shrink-0">
             <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
               <path
                 className="text-slate-200 dark:text-slate-700"
-                strokeWidth="3"
+                strokeWidth="4"
                 stroke="currentColor"
                 fill="none"
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               />
               <motion.path
                 className="text-blue-500"
-                strokeWidth="3"
+                strokeWidth="4"
                 strokeDasharray={`${confidence}, 100`}
                 strokeLinecap="round"
                 stroke="currentColor"
@@ -127,25 +127,24 @@ export default function HeroPredictionCard() {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-slate-700">{confidence}%</span>
-              <span className="text-[10px] font-semibold text-slate-400 uppercase">Confidence</span>
+              <span className="text-xl font-bold text-slate-800 dark:text-slate-100">{confidence}%</span>
             </div>
           </div>
         </div>
 
         {/* Top 3 Predictions */}
-        <div className="border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-700 pt-4 lg:pt-0 lg:pl-6 flex flex-col justify-center">
-          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Top 3 Predictions</h3>
-          <div className="space-y-4">
+        <div className="lg:col-span-1 flex flex-col justify-center bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700 h-full">
+          <h3 className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest mb-3">Probability Distribution</h3>
+          <div className="space-y-3">
             {topPredictions.length > 0 ? topPredictions.map(([className, prob], index) => (
               <div key={className} className="flex flex-col gap-1">
-                <div className="flex justify-between text-sm font-semibold">
-                  <span className="text-slate-700">{className.replace('_', ' ')}</span>
-                  <span className="text-slate-500">{prob.toFixed(1)}%</span>
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-slate-700 dark:text-slate-300 truncate pr-2">{className.replace('_', ' ')}</span>
+                  <span className="text-slate-600 dark:text-slate-400">{prob.toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1">
                   <motion.div
-                    className="h-1.5 rounded-full bg-blue-400"
+                    className="h-1 rounded-full bg-blue-500"
                     initial={{ width: 0 }}
                     animate={{ width: `${prob}%` }}
                     transition={{ duration: 0.8, delay: index * 0.1 }}
@@ -153,7 +152,7 @@ export default function HeroPredictionCard() {
                 </div>
               </div>
             )) : (
-              <div className="text-sm text-slate-400 font-medium">Waiting for inference data...</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium italic">Awaiting telemetry...</div>
             )}
           </div>
         </div>

@@ -202,25 +202,25 @@ export default function DatasetCollectionPage() {
               </h3>
               
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="table-enterprise">
                   <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">
-                      <th className="py-3 px-4">MQ-2</th>
-                      <th className="py-3 px-4">MQ-5</th>
-                      <th className="py-3 px-4">MQ-9</th>
-                      <th className="py-3 px-4">MQ-135</th>
-                      <th className="py-3 px-4">Temp (°C)</th>
-                      <th className="py-3 px-4">Humidity (%)</th>
+                    <tr>
+                      <th>MQ-2</th>
+                      <th>MQ-5</th>
+                      <th>MQ-9</th>
+                      <th>MQ-135</th>
+                      <th>Temp (°C)</th>
+                      <th>Humidity (%)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-slate-100 dark:border-slate-800/50">
-                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">{data.mq2?.toFixed(1) || 0}</td>
-                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">{data.mq5?.toFixed(1) || 0}</td>
-                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">{data.mq9?.toFixed(1) || 0}</td>
-                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">{data.mq135?.toFixed(1) || 0}</td>
-                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">{data.dht_temp?.toFixed(1) || 0}</td>
-                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">{data.dht_humidity?.toFixed(1) || 0}</td>
+                    <tr>
+                      <td className="font-mono">{data.mq2?.toFixed(1) || 0}</td>
+                      <td className="font-mono">{data.mq5?.toFixed(1) || 0}</td>
+                      <td className="font-mono">{data.mq9?.toFixed(1) || 0}</td>
+                      <td className="font-mono">{data.mq135?.toFixed(1) || 0}</td>
+                      <td className="font-mono">{data.dht_temp?.toFixed(1) || 0}</td>
+                      <td className="font-mono">{data.dht_humidity?.toFixed(1) || 0}</td>
                     </tr>
                   </tbody>
                 </table>

@@ -56,7 +56,7 @@ export default function SensorCalibration() {
 
   return (
     <motion.div
-      className="glass card-sensor p-5 flex flex-col gap-4"
+      className="glass card-sensor flex flex-col gap-4"
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}

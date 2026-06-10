@@ -190,7 +190,7 @@ export default function ArchitecturePage() {
           </motion.div>
 
           {/* System Diagram */}
-          <motion.div variants={itemVariants} className="glass card-sensor p-6">
+          <motion.div variants={itemVariants} className="glass card-sensor">
             <div className="section-title">
               <Boxes size={14} />
               System Diagram
@@ -344,7 +344,7 @@ export default function ArchitecturePage() {
           </motion.div>
 
           {/* Technology Stack */}
-          <motion.div variants={itemVariants} className="glass card-sensor p-6">
+          <motion.div variants={itemVariants} className="glass card-sensor">
             <div className="section-title">
               <Code2 size={14} />
               Technology Stack

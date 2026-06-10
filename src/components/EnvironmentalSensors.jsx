@@ -78,7 +78,7 @@ function MiniGauge({ value, max, size = 80, strokeWidth = 6, unit, label, icon: 
 function SensorCard({ title, children, delay = 0 }) {
   return (
     <motion.div
-      className="glass card-sensor p-5 flex-1 min-w-[220px]"
+      className="glass card-sensor flex-1 min-w-[220px]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay, ease: 'easeOut' }}

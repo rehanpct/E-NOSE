@@ -106,17 +106,20 @@ export default function GasConcentrationDashboard() {
 
   return (
     <motion.div
-      className="glass card-sensor p-5"
+      className="glass card-sensor p-4 lg:p-5"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
     >
-      <h3 className="section-title mb-5">
-        <Activity size={14} />
-        Gas Concentration Overview
-      </h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="section-title mb-0">
+          <Activity size={14} />
+          Gas Concentration Overview
+        </h3>
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Live Stream</span>
+      </div>
 
-      <div className="flex flex-wrap items-start justify-center gap-6 sm:gap-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         {gauges.map((g, i) => (
           <ConcentrationGauge key={g.gradId} {...g} index={i} />
         ))}

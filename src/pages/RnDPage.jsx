@@ -52,8 +52,8 @@ export default function RnDPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={FEATURE_IMPORTANCE} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: '#94a3b8' }} />
-                    <YAxis dataKey="name" type="category" tick={{ fill: '#94a3b8' }} width={80} />
+                    <XAxis type="number" tick={{ fill: 'var(--color-text-muted)' }} />
+                    <YAxis dataKey="name" type="category" tick={{ fill: 'var(--color-text-muted)' }} width={80} />
                     <Tooltip cursor={{fill: 'rgba(148,163,184,0.1)'}} contentStyle={{borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.9)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'}} />
                     <Bar dataKey="value" fill="#0ea5e9" radius={[0, 4, 4, 0]} />
                   </BarChart>
@@ -70,7 +70,7 @@ export default function RnDPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="80%" data={CORRELATION_DATA}>
                     <PolarGrid stroke="rgba(148,163,184,0.2)" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
                     <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
                     <Radar name="Cluster A (Smoke)" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
                     <Tooltip />
@@ -86,33 +86,33 @@ export default function RnDPage() {
               </h3>
               
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="table-enterprise">
                   <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">
-                      <th className="py-3 px-4">Version</th>
-                      <th className="py-3 px-4">Date Deploy</th>
-                      <th className="py-3 px-4">Accuracy</th>
-                      <th className="py-3 px-4">F1 Score</th>
-                      <th className="py-3 px-4">Dataset Size</th>
-                      <th className="py-3 px-4">Status</th>
+                    <tr>
+                      <th>Version</th>
+                      <th>Date Deploy</th>
+                      <th>Accuracy</th>
+                      <th>F1 Score</th>
+                      <th>Dataset Size</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-slate-100 dark:border-slate-800/50">
-                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">v2.1 (Active)</td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">2026-06-09</td>
-                      <td className="py-3 px-4 text-emerald-500 font-semibold">96.4%</td>
-                      <td className="py-3 px-4 text-emerald-500 font-semibold">0.95</td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">12,450</td>
-                      <td className="py-3 px-4"><span className="px-2 py-1 bg-emerald-100 text-emerald-600 rounded-md text-xs font-semibold">Production</span></td>
+                    <tr>
+                      <td>v2.1 (Active)</td>
+                      <td>2026-06-09</td>
+                      <td className="text-emerald-500 font-semibold">96.4%</td>
+                      <td className="text-emerald-500 font-semibold">0.95</td>
+                      <td>12,450</td>
+                      <td><span className="px-2 py-1 bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 rounded-md text-xs font-semibold">Production</span></td>
                     </tr>
-                    <tr className="border-b border-slate-100 dark:border-slate-800/50">
-                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">v2.0</td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">2026-05-15</td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">92.1%</td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">0.91</td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">8,200</td>
-                      <td className="py-3 px-4"><span className="px-2 py-1 bg-slate-100 text-slate-500 rounded-md text-xs font-semibold">Archived</span></td>
+                    <tr>
+                      <td>v2.0</td>
+                      <td>2026-05-15</td>
+                      <td>92.1%</td>
+                      <td>0.91</td>
+                      <td>8,200</td>
+                      <td><span className="px-2 py-1 bg-slate-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400 rounded-md text-xs font-semibold">Archived</span></td>
                     </tr>
                   </tbody>
                 </table>

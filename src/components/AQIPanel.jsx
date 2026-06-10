@@ -41,7 +41,7 @@ export default function AQIPanel() {
 
   return (
     <motion.div
-      className="glass card-sensor p-5 flex flex-col justify-center items-center text-center h-full"
+      className="glass card-sensor flex flex-col justify-center items-center text-center h-full"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4 }}

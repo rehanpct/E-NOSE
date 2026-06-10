@@ -214,7 +214,7 @@ export default function AIPredictionPanel() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="glass card-sensor p-5"
+      className="glass card-sensor"
     >
       {/* Header */}
       <div className="section-title mb-4">

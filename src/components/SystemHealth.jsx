@@ -14,19 +14,19 @@ function StatusItem({ icon: Icon, label, status, subtext }) {
       : 'text-red-500 bg-red-500/10';
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+    <div className="flex items-center justify-between p-3 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
       <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colorClass}`}>
-          <Icon size={18} />
+        <div className={`p-2 rounded-md ${colorClass}`}>
+          <Icon size={16} />
         </div>
         <div>
-          <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200">{label}</h4>
-          {subtext && <p className="text-xs text-slate-500 dark:text-slate-400">{subtext}</p>}
+          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{label}</h4>
+          {subtext && <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{subtext}</p>}
         </div>
       </div>
       <div className="flex items-center gap-2">
         <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : isWarning ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`} />
-        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{status}</span>
+        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">{status}</span>
       </div>
     </div>
   );
@@ -64,7 +64,7 @@ export default function SystemHealth() {
 
   return (
     <motion.div
-      className="glass card-sensor p-5 flex flex-col gap-4"
+      className="glass card-sensor flex flex-col gap-4"
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}

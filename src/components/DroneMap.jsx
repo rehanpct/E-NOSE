@@ -4,7 +4,8 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useDroneData } from '../context/DroneDataContext';
-import { MapPin, Navigation, Mountain } from 'lucide-react';
+import { MapPin, Navigation, Mountain, Map as MapIcon } from 'lucide-react';
+import ErrorBoundary from './ErrorBoundary';
 
 // Fix leaflet default icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -52,7 +53,7 @@ function MapAutoFollow({ lat, lng }) {
   const map = useMap();
 
   useEffect(() => {
-    if (lat && lng) {
+    if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
       map.setView([lat, lng], map.getZoom(), {
         animate: true,
         duration: 0.8,
@@ -63,24 +64,33 @@ function MapAutoFollow({ lat, lng }) {
   return null;
 }
 
-export default function DroneMap() {
-  const { data, pathHistory } = useDroneData();
+function DroneMapInner() {
+  const { data, pathHistory, esp32Connected } = useDroneData();
 
   const position = useMemo(() => {
-    return [data.latitude || 9.5937, data.longitude || 76.5222];
-  }, [data.latitude, data.longitude]);
+    const lat = data?.latitude;
+    const lng = data?.longitude;
+    if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+      return [lat, lng];
+    }
+    return [9.5937, 76.5222]; // Safe fallback (Kerala, India)
+  }, [data?.latitude, data?.longitude]);
 
   const polylinePositions = useMemo(() => {
-    if (!pathHistory || pathHistory.length === 0) return [];
-    return pathHistory.map(p => [p.lat, p.lng]);
+    if (!Array.isArray(pathHistory) || pathHistory.length === 0) return [];
+    return pathHistory
+      .filter(p => p && typeof p.lat === 'number' && typeof p.lng === 'number' && !isNaN(p.lat) && !isNaN(p.lng))
+      .map(p => [p.lat, p.lng]);
   }, [pathHistory]);
+
+  const hasValidPosition = Array.isArray(position) && position.length === 2 && typeof position[0] === 'number' && typeof position[1] === 'number';
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="glass card-sensor p-5"
+      className="glass card-sensor"
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
@@ -98,44 +108,45 @@ export default function DroneMap() {
         className="relative overflow-hidden"
         style={{ borderRadius: '12px', height: '350px' }}
       >
-        <MapContainer
-          center={position}
-          zoom={16}
-          scrollWheelZoom={true}
-          style={{
-            height: '100%',
-            width: '100%',
-            borderRadius: '12px',
-            zIndex: 1,
-          }}
-          zoomControl={true}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          {/* Auto-follow drone */}
-          <MapAutoFollow lat={data.latitude} lng={data.longitude} />
-
-          {/* Path history polyline */}
-          {polylinePositions.length > 1 && (
-            <Polyline
-              positions={polylinePositions}
-              pathOptions={{
-                color: '#0ea5e9',
-                weight: 3,
-                opacity: 0.7,
-                dashArray: '8, 6',
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
+        {hasValidPosition ? (
+          <MapContainer
+            center={position}
+            zoom={16}
+            scrollWheelZoom={true}
+            style={{
+              height: '100%',
+              width: '100%',
+              borderRadius: '12px',
+              zIndex: 1,
+            }}
+            zoomControl={true}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-          )}
 
-          {/* Drone marker */}
-          <Marker position={position} icon={droneIcon}>
-            <Popup>
+            {/* Auto-follow drone */}
+            <MapAutoFollow lat={data?.latitude} lng={data?.longitude} />
+
+            {/* Path history polyline */}
+            {Array.isArray(polylinePositions) && polylinePositions.length > 1 && (
+              <Polyline
+                positions={polylinePositions}
+                pathOptions={{
+                  color: '#0ea5e9',
+                  weight: 3,
+                  opacity: 0.7,
+                  dashArray: '8, 6',
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                }}
+              />
+            )}
+
+            {/* Drone marker */}
+            <Marker position={position} icon={droneIcon}>
+              <Popup>
               <div style={{
                 fontFamily: "'Inter', sans-serif",
                 padding: '4px 0',
@@ -175,6 +186,12 @@ export default function DroneMap() {
             </Popup>
           </Marker>
         </MapContainer>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+            <MapIcon className="text-slate-400 mb-2" size={32} />
+            <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Waiting for coordinates</p>
+          </div>
+        )}
 
         {/* Overlay info cards */}
         <div className="absolute bottom-3 left-3 z-[2] flex gap-2">
@@ -217,5 +234,13 @@ export default function DroneMap() {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+export default function DroneMap() {
+  return (
+    <ErrorBoundary>
+      <DroneMapInner />
+    </ErrorBoundary>
   );
 }

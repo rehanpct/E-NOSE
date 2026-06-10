@@ -24,8 +24,8 @@ export default function GasCompositionChart() {
     if (active && payload && payload.length) {
       return (
         <div className="glass p-2 px-3 text-xs shadow-lg" style={{ borderRadius: 8 }}>
-          <p className="font-bold text-slate-700">{payload[0].name}</p>
-          <p className="text-blue-600 font-mono">{payload[0].value.toFixed(1)}%</p>
+          <p className="font-bold text-slate-800 dark:text-slate-200">{payload[0].name}</p>
+          <p className="text-blue-600 dark:text-blue-400 font-mono">{payload[0].value.toFixed(1)}%</p>
         </div>
       );
     }
@@ -73,13 +73,15 @@ export default function GasCompositionChart() {
                 height={36} 
                 iconType="circle"
                 iconSize={8}
-                wrapperStyle={{ fontSize: '11px', fontWeight: 500, color: '#64748b' }}
+                wrapperStyle={{ fontSize: '11px', fontWeight: 600 }}
               />
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm font-medium">
-            Waiting for distribution data...
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+            <Activity className="opacity-20 mb-2" size={32} />
+            <span className="text-sm font-semibold">Awaiting Telemetry</span>
+            <span className="text-xs">No distribution data</span>
           </div>
         )}
       </div>

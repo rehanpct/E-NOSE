@@ -76,7 +76,7 @@ export default function SettingsPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // General Settings
-  const [refreshRate, setRefreshRate] = useState('2');
+  const [refreshRate, setRefreshRate] = useState(() => localStorage.getItem('refreshRate') || '2');
   const [notifications, setNotifications] = useState(true);
   const [soundAlerts, setSoundAlerts] = useState(false);
 
@@ -112,6 +112,7 @@ export default function SettingsPage() {
   };
 
   const handleSave = () => {
+    localStorage.setItem('refreshRate', refreshRate);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -146,16 +147,16 @@ export default function SettingsPage() {
           className="flex-1 p-4 lg:p-6 space-y-6 overflow-y-auto"
         >
           {/* Page Title */}
-          <motion.div variants={itemVariants}>
-            <h1 className="text-2xl lg:text-3xl font-bold gradient-text">Settings</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Configure your E-NOSE dashboard preferences
+          <motion.div variants={itemVariants} className="mb-2">
+            <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100">System Configuration</h1>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest">
+              Platform Preferences & Data Flow
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* General Settings */}
-            <motion.div variants={itemVariants} className="glass card-sensor p-6">
+            <motion.div variants={itemVariants} className="glass card-sensor">
               <div className="section-title">
                 <Settings size={14} />
                 General Settings
@@ -237,7 +238,7 @@ export default function SettingsPage() {
             </motion.div>
 
             {/* Connection Settings */}
-            <motion.div variants={itemVariants} className="glass card-sensor p-6">
+            <motion.div variants={itemVariants} className="glass card-sensor">
               <div className="section-title">
                 <Wifi size={14} />
                 Connection Settings
@@ -315,7 +316,7 @@ export default function SettingsPage() {
             </motion.div>
 
             {/* Alert Thresholds */}
-            <motion.div variants={itemVariants} className="glass card-sensor p-6">
+            <motion.div variants={itemVariants} className="glass card-sensor">
               <div className="section-title">
                 <AlertTriangle size={14} />
                 Alert Thresholds
@@ -366,7 +367,7 @@ export default function SettingsPage() {
             </motion.div>
 
             {/* About Section */}
-            <motion.div variants={itemVariants} className="glass card-sensor p-6">
+            <motion.div variants={itemVariants} className="glass card-sensor">
               <div className="section-title">
                 <Info size={14} />
                 About

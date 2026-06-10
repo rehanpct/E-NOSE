@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from './context/ThemeContext';
 import { DroneDataProvider } from './context/DroneDataContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const SplashScreen = lazy(() => import('./pages/SplashScreen'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -19,6 +20,7 @@ const RnDPage = lazy(() => import('./pages/RnDPage'));
 const DeploymentReadinessPage = lazy(() => import('./pages/DeploymentReadinessPage'));
 
 function LoadingFallback() {
+  console.log("LoadingFallback rendered");
   return (
     <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--color-surface)' }}>
       <div className="text-center">
@@ -34,95 +36,30 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <Suspense fallback={<LoadingFallback />}>
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<SplashScreen />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route
-              path="/dashboard"
-              element={
-                <DroneDataProvider>
-                  <DashboardPage />
-                </DroneDataProvider>
-              }
-            />
-            <Route
-              path="/calibration"
-              element={
-                <DroneDataProvider>
-                  <CalibrationPage />
-                </DroneDataProvider>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <DroneDataProvider>
-                  <ReportsPage />
-                </DroneDataProvider>
-              }
-            />
-            <Route
-              path="/dataset"
-              element={
-                <DroneDataProvider>
-                  <DatasetPage />
-                </DroneDataProvider>
-              }
-            />
-            <Route
-              path="/dataset-collection"
-              element={
-                <DroneDataProvider>
-                  <DatasetCollectionPage />
-                </DroneDataProvider>
-              }
-            />
-            <Route
-              path="/training"
-              element={
-                <DroneDataProvider>
-                  <TrainingPage />
-                </DroneDataProvider>
-              }
-            />
-            <Route
-              path="/rnd"
-              element={
-                <DroneDataProvider>
-                  <RnDPage />
-                </DroneDataProvider>
-              }
-            />
-            <Route
-              path="/deployment"
-              element={
-                <DroneDataProvider>
-                  <DeploymentPage />
-                </DroneDataProvider>
-              }
-            />
-            <Route
-              path="/architecture"
-              element={
-                <DroneDataProvider>
-                  <ArchitecturePage />
-                </DroneDataProvider>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <DroneDataProvider>
-                  <SettingsPage />
-                </DroneDataProvider>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AnimatePresence>
-      </Suspense>
+      <DroneDataProvider>
+        <Suspense fallback={<LoadingFallback />}>
+          <AnimatePresence mode="wait">
+            <ErrorBoundary>
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<SplashScreen />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/calibration" element={<CalibrationPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/dataset" element={<DatasetPage />} />
+                <Route path="/dataset-collection" element={<DatasetCollectionPage />} />
+                <Route path="/training" element={<TrainingPage />} />
+                <Route path="/rnd" element={<RnDPage />} />
+                <Route path="/deployment" element={<DeploymentPage />} />
+                <Route path="/architecture" element={<ArchitecturePage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/deployment-readiness" element={<DeploymentReadinessPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </ErrorBoundary>
+          </AnimatePresence>
+        </Suspense>
+      </DroneDataProvider>
     </ThemeProvider>
   );
 }

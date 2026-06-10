@@ -141,47 +141,49 @@ export default function TrainingPage() {
                   {trainingState === 'pending' && metrics && (
                      <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl mb-4 mt-4">
                        <h4 className="text-slate-800 dark:text-white font-semibold mb-3 flex items-center gap-2"><CheckCircle2 className="text-emerald-500" size={16}/> Model Comparison</h4>
-                       <table className="w-full text-sm text-left">
-                         <thead>
-                           <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500">
-                             <th className="pb-2">Metric</th>
-                             <th className="pb-2">Active Model</th>
-                             <th className="pb-2 text-emerald-500">Candidate</th>
-                           </tr>
-                         </thead>
-                         <tbody className="text-slate-700 dark:text-slate-300">
-                           <tr className="border-b border-slate-100 dark:border-slate-800/50">
-                             <td className="py-2">Accuracy</td>
-                             <td className="py-2 font-mono">92.1%</td>
-                             <td className="py-2 font-mono text-emerald-500 font-bold">{metrics.accuracy * 100}%</td>
-                           </tr>
-                           <tr className="border-b border-slate-100 dark:border-slate-800/50">
-                             <td className="py-2">Precision</td>
-                             <td className="py-2 font-mono">0.91</td>
-                             <td className="py-2 font-mono text-emerald-500 font-bold">{metrics.precision}</td>
-                           </tr>
-                           <tr className="border-b border-slate-100 dark:border-slate-800/50">
-                             <td className="py-2">Recall</td>
-                             <td className="py-2 font-mono">0.90</td>
-                             <td className="py-2 font-mono text-emerald-500 font-bold">{metrics.recall}</td>
-                           </tr>
-                           <tr className="border-b border-slate-100 dark:border-slate-800/50">
-                             <td className="py-2">F1 Score</td>
-                             <td className="py-2 font-mono">0.91</td>
-                             <td className="py-2 font-mono text-emerald-500 font-bold">{metrics.f1_score}</td>
-                           </tr>
-                           <tr className="border-b border-slate-100 dark:border-slate-800/50">
-                             <td className="py-2">Dataset Size</td>
-                             <td className="py-2 font-mono">8,200</td>
-                             <td className="py-2 font-mono text-emerald-500 font-bold">{metrics.dataset_size || 'N/A'}</td>
-                           </tr>
-                           <tr>
-                             <td className="py-2">Training Date</td>
-                             <td className="py-2 font-mono">2026-05-15</td>
-                             <td className="py-2 font-mono text-emerald-500 font-bold">Just now</td>
-                           </tr>
-                         </tbody>
-                       </table>
+                       <div className="overflow-x-auto">
+                         <table className="table-enterprise">
+                           <thead>
+                             <tr>
+                               <th>Metric</th>
+                               <th>Active Model</th>
+                               <th className="text-emerald-500">Candidate</th>
+                             </tr>
+                           </thead>
+                           <tbody>
+                             <tr>
+                               <td>Accuracy</td>
+                               <td className="font-mono">92.1%</td>
+                               <td className="font-mono text-emerald-500 font-bold">{metrics.accuracy * 100}%</td>
+                             </tr>
+                             <tr>
+                               <td>Precision</td>
+                               <td className="font-mono">0.91</td>
+                               <td className="font-mono text-emerald-500 font-bold">{metrics.precision}</td>
+                             </tr>
+                             <tr>
+                               <td>Recall</td>
+                               <td className="font-mono">0.90</td>
+                               <td className="font-mono text-emerald-500 font-bold">{metrics.recall}</td>
+                             </tr>
+                             <tr>
+                               <td>F1 Score</td>
+                               <td className="font-mono">0.91</td>
+                               <td className="font-mono text-emerald-500 font-bold">{metrics.f1_score}</td>
+                             </tr>
+                             <tr>
+                               <td>Dataset Size</td>
+                               <td className="font-mono">8,200</td>
+                               <td className="font-mono text-emerald-500 font-bold">{metrics.dataset_size || 'N/A'}</td>
+                             </tr>
+                             <tr>
+                               <td>Training Date</td>
+                               <td className="font-mono">2026-05-15</td>
+                               <td className="font-mono text-emerald-500 font-bold">Just now</td>
+                             </tr>
+                           </tbody>
+                         </table>
+                       </div>
                      </div>
                   )}
                 </div>

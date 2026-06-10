@@ -1,12 +1,24 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useDroneData } from '../context/DroneDataContext';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import ErrorBoundary from '../components/ErrorBoundary';
+
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
 } from 'recharts';
+
 import { Activity } from 'lucide-react';
+import RealTimeGasChart from '../components/RealTimeGasChart';
+import ConnectionBanner from '../components/ConnectionBanner';
 
 // Lazy load components
 const DroneStatus = React.lazy(() => import('../components/DroneStatus'));
@@ -36,9 +48,10 @@ function PlaceholderCard({ title, spanClass = '', children }) {
     >
       <div className="section-title">{title}</div>
       {children || (
-        <div className="flex items-center justify-center h-32 text-sm text-slate-400 dark:text-slate-500">
-          <Activity size={16} className="mr-2" />
-          Loading {title}...
+        <div className="flex flex-col gap-3 mt-4 w-full">
+          <div className="skeleton h-16 w-full" />
+          <div className="skeleton h-4 w-3/4" />
+          <div className="skeleton h-4 w-1/2" />
         </div>
       )}
     </motion.div>
@@ -48,11 +61,13 @@ function PlaceholderCard({ title, spanClass = '', children }) {
 function LazyComponent({ Component, title, spanClass }) {
   if (!Component) return <PlaceholderCard title={title} spanClass={spanClass} />;
   return (
-    <React.Suspense fallback={<PlaceholderCard title={title} spanClass={spanClass} />}>
-      <div className={spanClass}>
-        <Component />
-      </div>
-    </React.Suspense>
+    <ErrorBoundary>
+      <React.Suspense fallback={<PlaceholderCard title={title} spanClass={spanClass} />}>
+        <div className={spanClass}>
+          <Component />
+        </div>
+      </React.Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -84,9 +99,15 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function DashboardPage() {
-  const { sensorHistory, backendConnected, esp32Connected, lastReceivedTimestamp } = useDroneData();
+  console.log("DashboardPage render");
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    console.log("DashboardPage mounted");
+    return () => console.log("DashboardPage unmounted");
+  }, []);
 
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => !prev);
@@ -99,22 +120,6 @@ export default function DashboardPage() {
       document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
     }
   }, []);
-
-  // Prepare chart data from sensorHistory
-  const chartData = sensorHistory.timestamps.map((ts, i) => ({
-    time: ts,
-    'MQ-2': sensorHistory.mq2[i] ?? 0,
-    'MQ-5': sensorHistory.mq5[i] ?? 0,
-    'MQ-9': sensorHistory.mq9[i] ?? 0,
-    'MQ-135': sensorHistory.mq135[i] ?? 0,
-  }));
-
-  const lineColors = {
-    'MQ-2': '#ef4444',
-    'MQ-5': '#f59e0b',
-    'MQ-9': '#10b981',
-    'MQ-135': '#8b5cf6',
-  };
 
   return (
     <motion.div
@@ -143,27 +148,7 @@ export default function DashboardPage() {
         {/* Dashboard content */}
         <main className="flex-1 p-4 lg:p-6">
           {/* Connection Status Banner (if disconnected) */}
-          {(!backendConnected || !esp32Connected) && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <Activity className="text-red-500 animate-pulse" size={20} />
-                <div>
-                  <h3 className="font-semibold text-red-600 dark:text-red-400">
-                    {!backendConnected ? "Backend Disconnected" : "ESP32 Offline"}
-                  </h3>
-                  <p className="text-sm text-red-500/80">
-                    {!backendConnected 
-                      ? "Trying to reconnect to server..." 
-                      : `No data received from sensor node. Last seen: ${lastReceivedTimestamp ? new Date(lastReceivedTimestamp).toLocaleTimeString() : 'Never'}`}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
+          <ConnectionBanner />
 
           {/* Top Status Bar */}
           <LazyComponent Component={TopStatusBar} title="System Status" spanClass="mb-6" />
@@ -211,62 +196,11 @@ export default function DashboardPage() {
             <LazyComponent Component={DroneMap} title="Drone Map" spanClass="span-2" />
 
             {/* Real-time Gas Chart - span 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="glass card-sensor span-2"
-            >
-              <div className="section-title">
-                <Activity size={14} />
-                Real-Time Gas Concentrations
+            <ErrorBoundary>
+              <div className="span-2">
+                <RealTimeGasChart />
               </div>
-              <div className="mt-3" style={{ height: 280 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="rgba(148,163,184,0.15)"
-                    />
-                    <XAxis
-                      dataKey="time"
-                      tick={{ fontSize: 10, fill: '#94a3b8' }}
-                      interval="preserveStartEnd"
-                      tickLine={false}
-                      axisLine={{ stroke: 'rgba(148,163,184,0.2)' }}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10, fill: '#94a3b8' }}
-                      tickLine={false}
-                      axisLine={{ stroke: 'rgba(148,163,184,0.2)' }}
-                      width={40}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend
-                      wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-                      iconType="circle"
-                      iconSize={8}
-                    />
-                    {Object.entries(lineColors).map(([name, color]) => (
-                      <Line
-                        key={name}
-                        type="monotone"
-                        dataKey={name}
-                        stroke={color}
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0, fill: color }}
-                      />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 dark:text-slate-500">
-                <span>Last 60 readings</span>
-                <span>•</span>
-                <span>Updated every 2s</span>
-              </div>
-            </motion.div>
+            </ErrorBoundary>
 
             {/* Alerts Panel */}
             <LazyComponent Component={AlertsPanel} title="Alerts" spanClass="" />

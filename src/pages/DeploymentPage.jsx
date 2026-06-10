@@ -146,7 +146,7 @@ export default function DeploymentPage() {
           </motion.div>
 
           {/* Currently Deployed Model */}
-          <motion.div variants={itemVariants} className="glass card-sensor p-6">
+          <motion.div variants={itemVariants} className="glass card-sensor">
             <div className="flex items-start justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center shadow-lg shadow-sky-500/20">
@@ -184,7 +184,7 @@ export default function DeploymentPage() {
           </motion.div>
 
           {/* Deployment Pipeline */}
-          <motion.div variants={itemVariants} className="glass card-sensor p-6">
+          <motion.div variants={itemVariants} className="glass card-sensor">
             <div className="section-title">
               <Activity size={14} />
               Deployment Pipeline
@@ -240,7 +240,7 @@ export default function DeploymentPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
-                className="glass card-sensor p-5"
+                className="glass card-sensor"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div
@@ -257,7 +257,7 @@ export default function DeploymentPage() {
           </motion.div>
 
           {/* Deployment Log */}
-          <motion.div variants={itemVariants} className="glass card-sensor p-6">
+          <motion.div variants={itemVariants} className="glass card-sensor">
             <div className="section-title">
               <Terminal size={14} />
               Deployment Log

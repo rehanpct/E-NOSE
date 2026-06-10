@@ -215,16 +215,16 @@ export default function ReportsPage() {
               className="overflow-auto rounded-xl border border-slate-100 dark:border-slate-800"
               style={{ maxHeight: 420 }}
             >
-              <table className="w-full text-sm">
+              <table className="table-enterprise">
                 <thead>
-                  <tr className="bg-slate-50/80 dark:bg-slate-800/50 sticky top-0 z-10">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                  <tr>
+                    <th>
                       Timestamp
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    <th>
                       Level
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    <th>
                       Message
                     </th>
                   </tr>
@@ -249,11 +249,10 @@ export default function ReportsPage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.2, delay: Math.min(i * 0.02, 0.5) }}
-                        className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
                       >
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
-                            <Clock size={12} className="flex-shrink-0 opacity-50" />
+                        <td className="whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 font-mono">
+                            <Clock size={12} className="flex-shrink-0 opacity-50 text-slate-400" />
                             {alert.timestamp
                               ? new Date(alert.timestamp).toLocaleTimeString('en-US', {
                                   hour: '2-digit',
@@ -263,10 +262,10 @@ export default function ReportsPage() {
                               : '—'}
                           </div>
                         </td>
-                        <td className="px-4 py-3">
+                        <td>
                           <AlertLevelBadge level={alert.level} />
                         </td>
-                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300 text-sm">
+                        <td>
                           {alert.message || '—'}
                         </td>
                       </motion.tr>

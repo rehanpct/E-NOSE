@@ -49,7 +49,7 @@ function ReadingBar({ label, pct }) {
 function GasCard({ title, icon: Icon, value, unit = 'ppm', readings, delay = 0 }) {
   return (
     <motion.div
-      className="glass card-sensor p-5 flex flex-col gap-3"
+      className="glass card-sensor flex flex-col gap-3"
       initial={{ opacity: 0, scale: 0.95, y: 16 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.45, delay, ease: 'easeOut' }}
@@ -70,10 +70,9 @@ function GasCard({ title, icon: Icon, value, unit = 'ppm', readings, delay = 0 }
         </div>
       </div>
 
-      {/* value */}
       <div className="flex items-baseline gap-1.5">
         <motion.span
-          className="text-3xl font-extrabold gradient-text leading-none"
+          className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 leading-none"
           key={Math.round(value)}
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
