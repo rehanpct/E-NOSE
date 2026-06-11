@@ -18,56 +18,76 @@ class ENOSEPredictor:
     def load_model(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         target_dir = os.path.join(base_dir, self.models_dir)
-        
-        # Search for model files
+
         pattern_pkl = os.path.join(target_dir, "*.pkl")
         pattern_joblib = os.path.join(target_dir, "*.joblib")
-        
+
         files = glob.glob(pattern_pkl) + glob.glob(pattern_joblib)
-        
-        # Prefer e_nose_model.pkl if multiple exist
-        target_file = None
-        for f in files:
-            if "e_nose_model.pkl" in f:
-                target_file = f
-                break
-        
-        if not target_file and files:
-            target_file = files[0]
-            
-        if not target_file:
-            print("No model found. Running without predictions.")
+
+        print("\n" + "=" * 70)
+        print("SEARCHING FOR MODELS")
+        print("=" * 70)
+
+        if not files:
+            print("No model files found.")
             self.status = "Failed - No model found"
             return
-            
+
+        for f in files:
+            print("FOUND:", f)
+
+        target_file = None
+
+        for f in files:
+            if os.path.basename(f).lower() == "e_nose_model_new.pkl":
+                target_file = f
+                print("\nUsing preferred model: e_nose_model_new.pkl")
+                break
+
+        if not target_file:
+            for f in files:
+                if os.path.basename(f).lower() == "e_nose_model.pkl":
+                    target_file = f
+                    print("\nUsing fallback model: e_nose_model.pkl")
+                    break
+
+        if not target_file:
+            files.sort(key=os.path.getmtime, reverse=True)
+            target_file = files[0]
+            print("\nUsing newest available model")
+
         try:
+            print("\n" + "=" * 70)
+            print("LOADING MODEL:")
+            print(target_file)
+            print("=" * 70)
+
             self.model = joblib.load(target_file)
+
             self.model_filename = os.path.basename(target_file)
             self.model_type = type(self.model).__name__
             self.status = "Loaded"
-            
-            if hasattr(self.model, 'n_features_in_'):
-                if self.model.n_features_in_ != 6:
-                    print(f"WARNING: Expected 6 features, model has {self.model.n_features_in_}")
-                    self.status = "Failed - Feature count mismatch"
-                    self.model = None
-                    return
-            
+
             if hasattr(self.model, 'feature_names_in_'):
                 self.features = list(self.model.feature_names_in_)
+            elif hasattr(self.model, 'n_features_in_'):
+                self.features = ['mq2', 'mq5', 'mq9', 'mq135', 'temp', 'humidity'][:self.model.n_features_in_]
             else:
-                self.features = ['mq2', 'mq5', 'mq9', 'mq135', 'temperature', 'humidity']
-                
+                self.features = ['mq2', 'mq5', 'mq9', 'mq135', 'temp', 'humidity']
+
             if hasattr(self.model, 'classes_'):
-                self.classes = list(self.model.classes_)
-                
-            print(f"Model loaded successfully from {target_file}")
-            print(f"Features: {self.features}")
-            print(f"Classes: {self.classes}")
-            
+                self.classes = [str(c) for c in self.model.classes_]
+            else:
+                self.classes = []
+
+            print("MODEL TYPE:", self.model_type)
+
         except Exception as e:
-            print(f"Error loading model: {e}")
+            print("ERROR:", e)
             self.status = f"Failed - {str(e)}"
+            self.model = None
+
+    
 
     def predict(self, mq2, mq5, mq9, mq135, temperature, humidity):
         if self.model is None or "Failed" in self.status:

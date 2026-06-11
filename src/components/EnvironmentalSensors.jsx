@@ -148,7 +148,7 @@ export default function EnvironmentalSensors() {
           gradId="bmeHumGrad"
         />
         <MiniGauge
-          value={data.pressure ?? 950}
+          value={data.pressure ?? 0}
           max={1100}
           size={80}
           unit="hPa"

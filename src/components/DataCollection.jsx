@@ -1,15 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Database, TrendingUp, Clock, HardDrive } from 'lucide-react';
 import { useDroneData } from '../context/DroneDataContext';
+import { fetchJson, formatBytes } from '../utils/api';
 
 export default function DataCollection() {
-  const { sensorHistory, lastReceivedTimestamp } = useDroneData();
+  const { totalSamples, samplesPerMinute, lastReceivedTimestamp } = useDroneData();
+  const [datasetStats, setDatasetStats] = useState(null);
 
-  // Calculate some dummy stats based on history length, or assume 30 samples/min for a 2s interval
-  const totalSamples = sensorHistory.timestamps.length * 150 + 45000; // Simulated historical count + session
-  const samplesPerMinute = 30; // 60 seconds / 2s interval
-  
+  useEffect(() => {
+    const load = () => {
+      fetchJson('/api/dataset/stats')
+        .then(setDatasetStats)
+        .catch(() => setDatasetStats(null));
+    };
+    load();
+    const interval = setInterval(load, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const growthRate = datasetStats?.quality?.growth_per_minute ?? samplesPerMinute ?? 0;
+  const csvSize = formatBytes(datasetStats?.quality?.csv_size_bytes ?? 0);
+
   return (
     <motion.div
       className="glass card-sensor flex flex-col gap-4"
@@ -29,7 +41,7 @@ export default function DataCollection() {
             <span>Total Samples</span>
           </div>
           <div className="text-xl font-bold text-slate-800 dark:text-white">
-            {totalSamples.toLocaleString()}
+            {(totalSamples || 0).toLocaleString()}
           </div>
         </div>
 
@@ -39,17 +51,17 @@ export default function DataCollection() {
             <span>Samples/Min</span>
           </div>
           <div className="text-xl font-bold text-slate-800 dark:text-white">
-            {samplesPerMinute}
+            {growthRate > 0 ? growthRate : samplesPerMinute || '—'}
           </div>
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-800/50 p-3 px-4 rounded-xl">
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
             <Database size={14} />
-            <span>Dataset Growth</span>
+            <span>Dataset Size</span>
           </div>
           <div className="text-xl font-bold text-emerald-500">
-            +1.2 MB/hr
+            {csvSize}
           </div>
         </div>
 

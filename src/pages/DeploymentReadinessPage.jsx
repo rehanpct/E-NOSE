@@ -2,28 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import { CheckCircle2, XCircle, ShieldCheck, Database, Activity, RefreshCw } from 'lucide-react';
+import { CheckCircle2, XCircle, ShieldCheck, Activity, RefreshCw } from 'lucide-react';
 import { useDroneData } from '../context/DroneDataContext';
+import { fetchJson } from '../utils/api';
 
 export default function DeploymentReadinessPage() {
-  const { isConnected, esp32Connected, data } = useDroneData();
+  const { backendConnected, esp32Connected, data, alerts } = useDroneData();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [health, setHealth] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchHealth = () => {
     setLoading(true);
-    fetch('http://localhost:5000/api/system-health')
-      .then(res => res.json())
-      .then(d => {
-        setHealth(d);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    Promise.all([
+      fetchJson('/api/system-health').catch(() => null),
+      fetchJson('/api/analytics/trends?range=hour').catch(() => null),
+    ]).then(([healthData, analyticsData]) => {
+      setHealth(healthData);
+      setAnalytics(analyticsData);
+      setLoading(false);
+    });
   };
 
   useEffect(() => {
@@ -35,12 +35,12 @@ export default function DeploymentReadinessPage() {
   const checks = [
     { label: 'Database Connected', status: health?.database === 'online' },
     { label: 'Model Loaded', status: health?.model === 'loaded' },
-    { label: 'Socket.IO Active', status: isConnected },
+    { label: 'Backend Reachable', status: backendConnected },
     { label: 'ESP32 Connected', status: esp32Connected },
     { label: 'Dataset Collection Working', status: health?.total_samples > 0 },
-    { label: 'Prediction Engine Working', status: data.predicted_gas !== "Unknown" && data.predicted_gas !== null },
-    { label: 'Alert Engine Working', status: true }, // Assumed true if backend is online
-    { label: 'Analytics Working', status: health?.database === 'online' }
+    { label: 'Prediction Engine Working', status: health?.total_predictions > 0 || (data.predicted_gas && data.predicted_gas !== 'Unknown') },
+    { label: 'Alert Engine Working', status: alerts.length > 0 || health?.total_sensor_readings > 0 },
+    { label: 'Analytics Working', status: analytics?.status === 'success' && (analytics?.reading_count > 0 || analytics?.prediction_count > 0) },
   ];
 
   const passedChecks = checks.filter(c => c.status).length;
@@ -83,7 +83,7 @@ export default function DeploymentReadinessPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {checks.map((check, i) => (
+              {checks.map((check) => (
                 <div key={check.label} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                   <span className="font-medium text-slate-700 dark:text-slate-300">{check.label}</span>
                   {check.status ? (

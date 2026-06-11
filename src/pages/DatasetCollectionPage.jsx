@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { Play, Square, Pause, Database, Activity, Save } from 'lucide-react';
 import { useDroneData } from '../context/DroneDataContext';
+import { API_BASE, fetchJson } from '../utils/api';
 
 const LABELS = [
   'Clean Air',
@@ -31,17 +32,21 @@ export default function DatasetCollectionPage() {
   const [duration, setDuration] = useState('00:00:00');
   const [customCount, setCustomCount] = useState(100);
 
-  // Fetch initial state
+  // Fetch initial state and poll while collecting
   useEffect(() => {
-    fetch('http://localhost:5000/api/dataset/stats')
-      .then(res => res.json())
-      .then(data => {
-        if(data.state) {
-          setCollectionState(data.state);
-        }
-      })
-      .catch(err => console.error("Could not fetch dataset stats", err));
-  }, []);
+    const load = () => {
+      fetchJson('/api/dataset/stats')
+        .then((data) => {
+          if (data.state) {
+            setCollectionState(data.state);
+          }
+        })
+        .catch((err) => console.error('Could not fetch dataset stats', err));
+    };
+    load();
+    const interval = setInterval(load, collectionState.is_collecting ? 2000 : 10000);
+    return () => clearInterval(interval);
+  }, [collectionState.is_collecting]);
   
   // Timer for duration
   useEffect(() => {
@@ -56,15 +61,10 @@ export default function DatasetCollectionPage() {
         const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
         const s = String(diff % 60).padStart(2, '0');
         setDuration(`${h}:${m}:${s}`);
-        
-        // Also simulate samples incrementing if backend is collecting
-        if (esp32Connected) {
-            setCollectionState(prev => ({...prev, samples_collected: prev.samples_collected + 1}));
-        }
-      }, 2000); // 2 second intervals for ESP32
+      }, 1000);
     }
     return () => clearInterval(interval);
-  }, [collectionState.is_collecting, collectionState.start_time, esp32Connected]);
+  }, [collectionState.is_collecting, collectionState.start_time]);
 
   const handleAction = async (action) => {
     const payload = { 
@@ -73,7 +73,7 @@ export default function DatasetCollectionPage() {
       target_count: action === 'start' ? customCount : null 
     };
     try {
-      const res = await fetch('http://localhost:5000/api/dataset/collect', {
+      const res = await fetch(`${API_BASE}/api/dataset/collect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

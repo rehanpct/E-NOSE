@@ -183,6 +183,7 @@ export default function DroneStatus() {
   const { data, isConnected } = useDroneData();
 
   const isOnline = data.drone_status === 'Active' || data.drone_status === 'active';
+  const hasTelemetry = data.battery != null || data.latitude != null;
   const armed = !!data.armed;
 
   return (
@@ -199,8 +200,8 @@ export default function DroneStatus() {
         <div className="flex items-center gap-2">
           {/* Online / Offline dot */}
           <span className={`status-dot ${isOnline ? 'status-online' : 'status-offline'}`} />
-          <span className={`text-xs font-semibold ${isOnline ? 'text-emerald-500' : 'text-red-500'}`}>
-            {isOnline ? 'Online' : 'Offline'}
+          <span className={`text-xs font-semibold ${isOnline && hasTelemetry ? 'text-emerald-500' : 'text-red-500'}`}>
+            {hasTelemetry ? (isOnline ? 'Online' : 'Standby') : 'No Data'}
           </span>
         </div>
       </div>

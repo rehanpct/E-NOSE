@@ -3,40 +3,56 @@ import { motion } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { Brain, Play, CheckCircle2, Shield, AlertTriangle } from 'lucide-react';
+import { API_BASE, fetchJson } from '../utils/api';
 
 export default function TrainingPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [modelStatus, setModelStatus] = useState(null);
-  const [trainingState, setTrainingState] = useState('idle'); // idle, training, pending
+  const [datasetStats, setDatasetStats] = useState(null);
+  const [trainingState, setTrainingState] = useState('idle');
   const [metrics, setMetrics] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
+
+  const fetchModelStatus = () => {
+    fetchJson('/api/model-status')
+      .then(setModelStatus)
+      .catch((err) => console.error(err));
+    fetchJson('/api/dataset/stats')
+      .then(setDatasetStats)
+      .catch((err) => console.error(err));
+  };
 
   useEffect(() => {
     fetchModelStatus();
   }, []);
 
-  const fetchModelStatus = () => {
-    fetch('http://localhost:5000/api/model-status')
-      .then(res => res.json())
-      .then(data => setModelStatus(data))
-      .catch(err => console.error(err));
-  };
+  const activeMetrics = modelStatus?.active_metrics || {};
+  const activeAccuracy = activeMetrics.accuracy != null ? `${(activeMetrics.accuracy * 100).toFixed(1)}%` : 'N/A';
+  const activePrecision = activeMetrics.precision ?? 'N/A';
+  const activeRecall = activeMetrics.recall ?? 'N/A';
+  const activeF1 = activeMetrics.f1_score ?? 'N/A';
+  const activeDatasetSize = activeMetrics.training_samples ?? datasetStats?.quality?.total_db_samples ?? 'N/A';
+  const activeTrainingDate = activeMetrics.deployed_at
+    ? new Date(activeMetrics.deployed_at).toLocaleDateString()
+    : modelStatus?.model_modified
+      ? new Date(modelStatus.model_modified).toLocaleDateString()
+      : 'N/A';
 
   const handleTrain = async () => {
     setTrainingState('training');
     setErrorMsg(null);
     try {
-      const res = await fetch('http://localhost:5000/api/train-model', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/train-model`, { method: 'POST' });
       const data = await res.json();
-      if(data.error) {
+      if (data.error) {
         setErrorMsg(data.error);
         setTrainingState('idle');
       } else {
         setMetrics(data.metrics);
         setTrainingState('pending');
       }
-    } catch(err) {
+    } catch (err) {
       setErrorMsg(err.message);
       setTrainingState('idle');
     }
@@ -44,16 +60,16 @@ export default function TrainingPage() {
 
   const handleDeploy = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/deploy-model', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/deploy-model`, { method: 'POST' });
       const data = await res.json();
-      if(data.error) {
+      if (data.error) {
         setErrorMsg(data.error);
       } else {
         setTrainingState('idle');
         setMetrics(null);
-        fetchModelStatus(); // Refresh active model data
+        fetchModelStatus();
       }
-    } catch(err) {
+    } catch (err) {
       setErrorMsg(err.message);
     }
   };
@@ -79,7 +95,6 @@ export default function TrainingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            {/* Active Model Info */}
             <motion.div className="glass p-6 rounded-2xl" initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}}>
               <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                 <Shield className="text-emerald-500" /> Active Production Model
@@ -100,6 +115,10 @@ export default function TrainingPage() {
                     <span className="text-slate-700 dark:text-slate-300">{modelStatus.model_type}</span>
                   </div>
                   <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
+                    <span className="text-slate-500 dark:text-slate-400">Accuracy</span>
+                    <span className="text-slate-700 dark:text-slate-300">{activeAccuracy}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
                     <span className="text-slate-500 dark:text-slate-400">Input Features</span>
                     <span className="text-slate-700 dark:text-slate-300">{modelStatus.features?.join(', ')}</span>
                   </div>
@@ -113,7 +132,6 @@ export default function TrainingPage() {
               )}
             </motion.div>
 
-            {/* Training Controls */}
             <motion.div className="glass p-6 rounded-2xl" initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} transition={{delay: 0.1}}>
               <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                 <Brain className="text-primary-500" /> Pipeline Controls
@@ -153,32 +171,32 @@ export default function TrainingPage() {
                            <tbody>
                              <tr>
                                <td>Accuracy</td>
-                               <td className="font-mono">92.1%</td>
-                               <td className="font-mono text-emerald-500 font-bold">{metrics.accuracy * 100}%</td>
+                               <td className="font-mono">{activeAccuracy}</td>
+                               <td className="font-mono text-emerald-500 font-bold">{(metrics.accuracy * 100).toFixed(1)}%</td>
                              </tr>
                              <tr>
                                <td>Precision</td>
-                               <td className="font-mono">0.91</td>
+                               <td className="font-mono">{activePrecision}</td>
                                <td className="font-mono text-emerald-500 font-bold">{metrics.precision}</td>
                              </tr>
                              <tr>
                                <td>Recall</td>
-                               <td className="font-mono">0.90</td>
+                               <td className="font-mono">{activeRecall}</td>
                                <td className="font-mono text-emerald-500 font-bold">{metrics.recall}</td>
                              </tr>
                              <tr>
                                <td>F1 Score</td>
-                               <td className="font-mono">0.91</td>
+                               <td className="font-mono">{activeF1}</td>
                                <td className="font-mono text-emerald-500 font-bold">{metrics.f1_score}</td>
                              </tr>
                              <tr>
                                <td>Dataset Size</td>
-                               <td className="font-mono">8,200</td>
-                               <td className="font-mono text-emerald-500 font-bold">{metrics.dataset_size || 'N/A'}</td>
+                               <td className="font-mono">{activeDatasetSize}</td>
+                               <td className="font-mono text-emerald-500 font-bold">{metrics.training_samples + metrics.testing_samples}</td>
                              </tr>
                              <tr>
                                <td>Training Date</td>
-                               <td className="font-mono">2026-05-15</td>
+                               <td className="font-mono">{activeTrainingDate}</td>
                                <td className="font-mono text-emerald-500 font-bold">Just now</td>
                              </tr>
                            </tbody>

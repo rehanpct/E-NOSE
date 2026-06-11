@@ -1,4 +1,5 @@
 import os
+import json
 import joblib
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -12,7 +13,29 @@ class TrainingService:
     def __init__(self):
         self.pending_model_path = os.path.join(os.path.dirname(__file__), '..', 'ml', 'pending_model.pkl')
         self.active_model_dir = os.path.join(os.path.dirname(__file__), '..', 'ml')
+        self.active_metrics_path = os.path.join(self.active_model_dir, 'active_model_metrics.json')
         self.last_metrics = None
+        self.active_metrics = self._load_active_metrics()
+
+    def _load_active_metrics(self):
+        if os.path.exists(self.active_metrics_path):
+            try:
+                with open(self.active_metrics_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError):
+                pass
+        return None
+
+    def _save_active_metrics(self, metrics, filename):
+        payload = {
+            **metrics,
+            'filename': filename,
+            'deployed_at': datetime.utcnow().isoformat() + 'Z',
+        }
+        with open(self.active_metrics_path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, indent=2)
+        self.active_metrics = payload
+        return payload
 
     def train_new_model(self):
         # Fetch data from DB
@@ -77,10 +100,30 @@ class TrainingService:
         
         # Reload predictor
         predictor.load_model()
+
+        if self.last_metrics:
+            self._save_active_metrics(self.last_metrics, 'active_model.pkl')
         
         return {
             "status": "success",
             "message": "Pending model successfully deployed."
         }
+
+    def get_deployment_history(self):
+        """List model backup files as deployment history entries."""
+        history = []
+        if not os.path.isdir(self.active_model_dir):
+            return history
+        for name in os.listdir(self.active_model_dir):
+            if name.startswith('model_backup_') and name.endswith('.pkl'):
+                path = os.path.join(self.active_model_dir, name)
+                mtime = datetime.utcfromtimestamp(os.path.getmtime(path))
+                history.append({
+                    'filename': name,
+                    'deployed_at': mtime.isoformat() + 'Z',
+                    'status': 'Archived',
+                })
+        history.sort(key=lambda x: x['deployed_at'], reverse=True)
+        return history
 
 trainer = TrainingService()

@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from './context/ThemeContext';
 import { DroneDataProvider } from './context/DroneDataContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import DiagnosticsPanel from './components/DiagnosticsPanel';
 
 const SplashScreen = lazy(() => import('./pages/SplashScreen'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -37,6 +38,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <DroneDataProvider>
+        <DiagnosticsPanel />
         <Suspense fallback={<LoadingFallback />}>
           <AnimatePresence mode="wait">
             <ErrorBoundary>

@@ -48,4 +48,19 @@ class AQIService:
         if eqs >= 25: return "Poor"
         return "Hazardous"
 
+    def calculate_indices(self, normalized_data, eqs):
+        """Derived air-quality indices from normalized sensor readings (0-100 scale)."""
+        mq2 = normalized_data.get('mq2', 0)
+        mq5 = normalized_data.get('mq5', 0)
+        mq9 = normalized_data.get('mq9', 0)
+        mq135 = normalized_data.get('mq135', 0)
+        pollution = round(max(0.0, min(100.0, 100.0 - eqs)), 2)
+        return {
+            'smoke_index': round(mq2, 2),
+            'voc_index': round(mq135, 2),
+            'air_quality_index': round(eqs, 2),
+            'hazard_level': round(max(mq2, mq5, mq9, mq135), 2),
+            'pollution_score': pollution,
+        }
+
 aqi_engine = AQIService()

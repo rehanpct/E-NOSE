@@ -65,25 +65,29 @@ function MapAutoFollow({ lat, lng }) {
 }
 
 function DroneMapInner() {
-  const { data, pathHistory, esp32Connected } = useDroneData();
+  const { data, pathHistory, hasGps } = useDroneData();
 
   const position = useMemo(() => {
     const lat = data?.latitude;
     const lng = data?.longitude;
-    if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+    if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng) && lat !== 0) {
       return [lat, lng];
     }
-    return [9.5937, 76.5222]; // Safe fallback (Kerala, India)
+    return null;
   }, [data?.latitude, data?.longitude]);
 
   const polylinePositions = useMemo(() => {
     if (!Array.isArray(pathHistory) || pathHistory.length === 0) return [];
     return pathHistory
-      .filter(p => p && typeof p.lat === 'number' && typeof p.lng === 'number' && !isNaN(p.lat) && !isNaN(p.lng))
-      .map(p => [p.lat, p.lng]);
+      .map((p) => {
+        const lat = p?.lat ?? p?.[0];
+        const lng = p?.lng ?? p?.[1];
+        return lat != null && lng != null ? [lat, lng] : null;
+      })
+      .filter(Boolean);
   }, [pathHistory]);
 
-  const hasValidPosition = Array.isArray(position) && position.length === 2 && typeof position[0] === 'number' && typeof position[1] === 'number';
+  const hasValidPosition = position != null;
 
   return (
     <motion.div
@@ -98,9 +102,15 @@ function DroneMapInner() {
           <MapPin size={14} className="text-sky-500" />
           Drone Tracking Map
         </div>
-        <div className="bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-          <span className="text-[9px] uppercase tracking-wider text-amber-600 font-bold">SIMULATED DATA</span>
-        </div>
+        {hasGps ? (
+          <div className="bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+            <span className="text-[9px] uppercase tracking-wider text-emerald-600 font-bold">LIVE GPS</span>
+          </div>
+        ) : (
+          <div className="bg-slate-500/10 px-2 py-0.5 rounded-md border border-slate-500/20">
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">NO GPS DATA</span>
+          </div>
+        )}
       </div>
 
       {/* Map Container */}
@@ -198,13 +208,13 @@ function DroneMapInner() {
           <div className="glass-strong px-3 py-1.5 flex items-center gap-1.5" style={{ borderRadius: '8px', fontSize: '11px' }}>
             <Navigation size={11} className="text-sky-500" />
             <span className="font-semibold text-slate-600 dark:text-slate-300">
-              {data.heading?.toFixed(0)}°
+              {data.heading != null ? `${data.heading.toFixed(0)}°` : '—'}
             </span>
           </div>
           <div className="glass-strong px-3 py-1.5 flex items-center gap-1.5" style={{ borderRadius: '8px', fontSize: '11px' }}>
             <Mountain size={11} className="text-sky-500" />
             <span className="font-semibold text-slate-600 dark:text-slate-300">
-              {data.altitude?.toFixed(1)}m
+              {data.altitude != null ? `${data.altitude.toFixed(1)}m` : '—'}
             </span>
           </div>
         </div>
@@ -216,13 +226,13 @@ function DroneMapInner() {
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-medium text-slate-400 uppercase">Lat</span>
             <span className="text-xs font-mono font-semibold text-slate-600 dark:text-slate-300">
-              {data.latitude?.toFixed(6)}
+              {data.latitude != null ? data.latitude.toFixed(6) : '—'}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-medium text-slate-400 uppercase">Lng</span>
             <span className="text-xs font-mono font-semibold text-slate-600 dark:text-slate-300">
-              {data.longitude?.toFixed(6)}
+              {data.longitude != null ? data.longitude.toFixed(6) : '—'}
             </span>
           </div>
         </div>

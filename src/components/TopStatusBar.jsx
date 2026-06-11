@@ -4,7 +4,7 @@ import { Activity, Wifi, Server, Cpu, Navigation, Clock } from 'lucide-react';
 import { useDroneData } from '../context/DroneDataContext';
 
 export default function TopStatusBar() {
-  const { esp32Connected, backendConnected, lastReceivedTimestamp, data } = useDroneData();
+  const { esp32Connected, backendConnected, lastReceivedTimestamp, data, modelStatus, hasGps } = useDroneData();
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -12,8 +12,8 @@ export default function TopStatusBar() {
     return () => clearInterval(timer);
   }, []);
 
-  // Determine Model Status based on data presence
-  const modelStatus = data.predicted_gas && data.predicted_gas !== "Unknown" ? "Online" : "Offline";
+  const modelOnline = modelStatus?.loaded || (data.predicted_gas && data.predicted_gas !== 'Unknown');
+  const droneStatus = hasGps ? 'Online' : 'No GPS';
 
   return (
     <motion.div 
@@ -26,7 +26,7 @@ export default function TopStatusBar() {
         <div className="flex items-center gap-2">
           <Navigation size={14} className="text-blue-500" />
           <span className="text-slate-600 dark:text-slate-300">Drone:</span>
-          <span className="text-blue-500 animate-pulse">Online (Demo)</span>
+          <span className={hasGps ? "text-blue-500 animate-pulse" : "text-slate-400"}>{droneStatus}</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -46,10 +46,10 @@ export default function TopStatusBar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Cpu size={14} className={modelStatus === "Online" ? "text-purple-500" : "text-red-500"} />
+          <Cpu size={14} className={modelOnline ? "text-purple-500" : "text-red-500"} />
           <span className="text-slate-600 dark:text-slate-300">AI Model:</span>
-          <span className={modelStatus === "Online" ? "text-purple-500" : "text-red-500"}>
-            {modelStatus}
+          <span className={modelOnline ? "text-purple-500" : "text-red-500"}>
+            {modelOnline ? "Online" : "Offline"}
           </span>
         </div>
       </div>

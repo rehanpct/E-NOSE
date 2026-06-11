@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
+import { fetchJson, formatUptime } from '../utils/api';
 import {
   Cpu, Wifi, Brain, Monitor, ChevronDown, ChevronUp,
   Radio, Thermometer, Wind, Gauge, Server, Database,
@@ -146,6 +147,18 @@ export default function ArchitecturePage() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [expandedCard, setExpandedCard] = useState(null);
+  const [liveHealth, setLiveHealth] = useState(null);
+  const [modelStatus, setModelStatus] = useState(null);
+
+  useEffect(() => {
+    const load = () => {
+      fetchJson('/api/system-health').then(setLiveHealth).catch(() => setLiveHealth(null));
+      fetchJson('/api/model-status').then(setModelStatus).catch(() => setModelStatus(null));
+    };
+    load();
+    const interval = setInterval(load, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -321,7 +334,15 @@ export default function ArchitecturePage() {
                       >
                         <div className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-800">
                           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-                            {comp.specs.map((spec, j) => (
+                            {comp.specs.map((spec, j) => {
+                              let displaySpec = spec;
+                              if (comp.id === 'ai-engine' && spec.startsWith('Accuracy:') && modelStatus?.active_metrics?.accuracy != null) {
+                                displaySpec = `Accuracy: ${(modelStatus.active_metrics.accuracy * 100).toFixed(1)}% (deployed model)`;
+                              }
+                              if (comp.id === 'ai-engine' && spec.startsWith('Models:') && modelStatus?.model_type) {
+                                displaySpec = `Active Model: ${modelStatus.model_type} (${modelStatus.filename || 'None'})`;
+                              }
+                              return (
                               <li
                                 key={j}
                                 className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300"
@@ -330,15 +351,40 @@ export default function ArchitecturePage() {
                                   className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"
                                   style={{ background: comp.color }}
                                 />
-                                {spec}
+                                {displaySpec}
                               </li>
-                            ))}
+                            );})}
                           </ul>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Live System Status */}
+          <motion.div variants={itemVariants} className="glass card-sensor">
+            <div className="section-title">
+              <Server size={14} />
+              Live System Status
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+              {[
+                { label: 'Backend', value: liveHealth?.backend === 'online' ? 'Online' : 'Offline' },
+                { label: 'Database', value: liveHealth?.database === 'online' ? 'Online' : 'Offline' },
+                { label: 'ESP32', value: liveHealth?.esp32 === 'online' ? 'Online' : 'Offline' },
+                { label: 'ML Model', value: liveHealth?.model === 'loaded' ? 'Loaded' : 'Failed' },
+                { label: 'Uptime', value: formatUptime(liveHealth?.uptime) },
+                { label: 'Total Samples', value: liveHealth?.total_samples?.toLocaleString() ?? '—' },
+                { label: 'Predictions', value: liveHealth?.total_predictions?.toLocaleString() ?? '—' },
+                { label: 'Active Model', value: modelStatus?.filename || liveHealth?.active_model || 'None' },
+              ].map((item) => (
+                <div key={item.label} className="text-center p-3 rounded-xl bg-white/30 dark:bg-slate-800/30">
+                  <p className="text-lg font-bold text-slate-800 dark:text-white">{item.value}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.label}</p>
+                </div>
               ))}
             </div>
           </motion.div>

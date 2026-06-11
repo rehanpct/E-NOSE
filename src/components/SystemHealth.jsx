@@ -32,8 +32,12 @@ function StatusItem({ icon: Icon, label, status, subtext }) {
   );
 }
 
+import { API_BASE, fetchJson } from '../utils/api';
+
+const backendUrl = API_BASE;
+
 export default function SystemHealth() {
-  const { backendConnected, esp32ConnectionState, lastReceivedTimestamp } = useDroneData();
+  const { backendConnected, socketConnected, socketReconnecting, esp32ConnectionState, lastReceivedTimestamp } = useDroneData();
   const [healthData, setHealthData] = useState({
     backend: 'offline',
     database: 'offline',
@@ -45,7 +49,7 @@ export default function SystemHealth() {
 
   useEffect(() => {
     const fetchHealth = () => {
-      fetch('http://localhost:5000/api/system-health')
+      fetch(`${backendUrl}/api/system-health`)
         .then(res => res.json())
         .then(data => setHealthData(data))
         .catch(err => setHealthData(prev => ({...prev, backend: 'offline', database: 'offline', model: 'offline'})));
@@ -59,8 +63,8 @@ export default function SystemHealth() {
   const dbStatus = healthData.database === 'online' ? 'Online' : 'Offline';
   const mlStatus = healthData.model === 'loaded' ? 'Loaded' : 'Failed';
   
-  // Combine local websocket state with backend state
-  const backendStatus = (healthData.backend === 'online' && backendConnected) ? 'Online' : 'Reconnecting...';
+  const backendStatus = backendConnected ? 'Online' : 'Offline';
+  const wsStatus = socketConnected ? 'Connected' : socketReconnecting ? 'Reconnecting...' : 'Disconnected';
 
   return (
     <motion.div
@@ -94,7 +98,7 @@ export default function SystemHealth() {
         <StatusItem 
           icon={Wifi} 
           label="WebSocket Stream" 
-          status={backendConnected ? 'Connected' : 'Disconnected'} 
+          status={wsStatus} 
         />
         <StatusItem 
           icon={Activity} 

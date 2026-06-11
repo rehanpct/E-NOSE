@@ -1,11 +1,42 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useDroneData } from '../context/DroneDataContext';
 import { Target, Activity, Clock, Map } from 'lucide-react';
 
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export default function MissionControlPanel() {
-  const { samplesCollected, missionStartTime, data } = useDroneData();
+  const { totalSamples, missionStartTime, pathHistory, hasGps } = useDroneData();
   const [duration, setDuration] = useState('00:00:00');
+
+  const pathDistanceKm = useMemo(() => {
+    if (!Array.isArray(pathHistory) || pathHistory.length < 2) return 0;
+    let total = 0;
+    for (let i = 1; i < pathHistory.length; i += 1) {
+      const prev = pathHistory[i - 1];
+      const curr = pathHistory[i];
+      const lat1 = prev.lat ?? prev[0];
+      const lng1 = prev.lng ?? prev[1];
+      const lat2 = curr.lat ?? curr[0];
+      const lng2 = curr.lng ?? curr[1];
+      if (lat1 != null && lng1 != null && lat2 != null && lng2 != null) {
+        total += haversineKm(lat1, lng1, lat2, lng2);
+      }
+    }
+    return total;
+  }, [pathHistory]);
+
+  const coveragePct = hasGps && pathHistory.length > 1
+    ? Math.min(100, Math.round((pathHistory.length / 100) * 100))
+    : null;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -41,7 +72,7 @@ export default function MissionControlPanel() {
             Samples Collected
           </div>
           <div className="text-xl font-mono font-bold text-slate-900 dark:text-slate-100">
-            {samplesCollected}
+            {totalSamples ?? 0}
           </div>
         </div>
 
@@ -58,25 +89,28 @@ export default function MissionControlPanel() {
         <div className="bg-slate-100 dark:bg-slate-800/80 p-2 px-3 rounded-md border border-slate-200 dark:border-slate-700">
           <div className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-0.5 flex items-center gap-1.5">
             <Map size={12} className="text-amber-500" />
-            Coverage (Simulated)
+            Track Coverage
           </div>
           <div className="flex items-end gap-2 mt-1">
             <div className="text-xl font-mono font-bold text-slate-900 dark:text-slate-100 leading-none">
-              64%
+              {coveragePct != null ? `${coveragePct}%` : '—'}
             </div>
-            <div className="w-full bg-slate-300 dark:bg-slate-700 h-1.5 rounded-full mb-2">
-              <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: '64%' }}></div>
-            </div>
+            {coveragePct != null && (
+              <div className="w-full bg-slate-300 dark:bg-slate-700 h-1.5 rounded-full mb-2">
+                <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${coveragePct}%` }}></div>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="bg-slate-100 dark:bg-slate-800/80 p-2 px-3 rounded-md border border-slate-200 dark:border-slate-700">
           <div className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-0.5 flex items-center gap-1.5">
             <Target size={12} className="text-purple-500" />
-            Survey Area
+            Distance Traveled
           </div>
           <div className="text-xl font-mono font-bold text-slate-900 dark:text-slate-100">
-            1.2 <span className="text-xs text-slate-500">km²</span>
+            {pathDistanceKm > 0 ? pathDistanceKm.toFixed(2) : '—'}{' '}
+            <span className="text-xs text-slate-500">km</span>
           </div>
         </div>
       </div>

@@ -1,30 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Beaker, Search, AlertCircle, ShieldAlert, CheckCircle } from 'lucide-react';
+import { API_BASE, fetchJson } from '../utils/api';
+import { useDroneData } from '../context/DroneDataContext';
 
 export default function PredictionTester() {
+  const { data } = useDroneData();
   const [inputs, setInputs] = useState({
-    mq2: 300,
-    mq5: 400,
-    mq9: 200,
-    mq135: 150,
-    temperature: 25,
-    humidity: 50
+    mq2: 0,
+    mq5: 0,
+    mq9: 0,
+    mq135: 0,
+    temperature: 0,
+    humidity: 0,
   });
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    fetchJson('/api/latest')
+      .then((latest) => {
+        if (latest.sensor) {
+          setInputs({
+            mq2: latest.sensor.raw_mq2 ?? 0,
+            mq5: latest.sensor.raw_mq5 ?? 0,
+            mq9: latest.sensor.raw_mq9 ?? 0,
+            mq135: latest.sensor.raw_mq135 ?? 0,
+            temperature: latest.sensor.temperature ?? 0,
+            humidity: latest.sensor.humidity ?? 0,
+          });
+        } else if (data.raw_mq2) {
+          setInputs({
+            mq2: data.raw_mq2 ?? 0,
+            mq5: data.raw_mq5 ?? 0,
+            mq9: data.raw_mq9 ?? 0,
+            mq135: data.raw_mq135 ?? 0,
+            temperature: data.dht_temp ?? 0,
+            humidity: data.dht_humidity ?? 0,
+          });
+        }
+        setInitialized(true);
+      })
+      .catch(() => setInitialized(true));
+  }, [data.raw_mq2, data.raw_mq5, data.raw_mq9, data.raw_mq135, data.dht_temp, data.dht_humidity]);
 
   const handlePredict = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/predict-manual', {
+      const res = await fetch(`${API_BASE}/api/predict-manual`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inputs)
+        body: JSON.stringify(inputs),
       });
-      const data = await res.json();
-      setResult(data);
+      const responseData = await res.json();
+      setResult(responseData);
     } catch (e) {
       console.error(e);
     } finally {
@@ -33,8 +64,16 @@ export default function PredictionTester() {
   };
 
   const handleChange = (e) => {
-    setInputs(prev => ({...prev, [e.target.name]: parseFloat(e.target.value) || 0}));
+    setInputs((prev) => ({ ...prev, [e.target.name]: parseFloat(e.target.value) || 0 }));
   };
+
+  if (!initialized) {
+    return (
+      <motion.div className="glass p-6 rounded-2xl">
+        <div className="text-slate-400 text-sm">Loading latest sensor values...</div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div className="glass p-6 rounded-2xl" initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}}>

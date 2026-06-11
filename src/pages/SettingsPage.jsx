@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { useDroneData } from '../context/DroneDataContext';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
+import { API_BASE, fetchJson } from '../utils/api';
 import {
   Settings, Sun, Moon, Bell, Volume2, Wifi, Globe, Plug,
   AlertTriangle, Info, Save, RefreshCw, Sliders, Shield,
@@ -71,9 +72,11 @@ const itemVariants = {
 
 export default function SettingsPage() {
   const { isDark, toggleTheme } = useTheme();
-  const { data } = useDroneData();
+  const { modelStatus, backendConnected } = useDroneData();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const backendWsUrl = API_BASE.replace(/^http/, 'ws');
 
   // General Settings
   const [refreshRate, setRefreshRate] = useState(() => localStorage.getItem('refreshRate') || '2');
@@ -81,10 +84,10 @@ export default function SettingsPage() {
   const [soundAlerts, setSoundAlerts] = useState(false);
 
   // Connection Settings
-  const [wsUrl, setWsUrl] = useState('ws://localhost:8765');
-  const [serialPort, setSerialPort] = useState('COM3');
-  const [baudRate, setBaudRate] = useState('57600');
-  const [connectionTested, setConnectionTested] = useState(false);
+  const [wsUrl, setWsUrl] = useState(() => localStorage.getItem('wsUrl') || backendWsUrl);
+  const [serialPort, setSerialPort] = useState(() => localStorage.getItem('serialPort') || '');
+  const [baudRate, setBaudRate] = useState(() => localStorage.getItem('baudRate') || '57600');
+  const [connectionTested, setConnectionTested] = useState(null);
 
   // Alert Thresholds
   const [mq2Threshold, setMq2Threshold] = useState(400);
@@ -106,13 +109,21 @@ export default function SettingsPage() {
     }
   };
 
-  const handleTestConnection = () => {
-    setConnectionTested(false);
-    setTimeout(() => setConnectionTested(true), 1500);
+  const handleTestConnection = async () => {
+    setConnectionTested(null);
+    try {
+      const health = await fetchJson('/api/system-health');
+      setConnectionTested(health.backend === 'online');
+    } catch {
+      setConnectionTested(false);
+    }
   };
 
   const handleSave = () => {
     localStorage.setItem('refreshRate', refreshRate);
+    localStorage.setItem('wsUrl', wsUrl);
+    localStorage.setItem('serialPort', serialPort);
+    localStorage.setItem('baudRate', baudRate);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -255,7 +266,7 @@ export default function SettingsPage() {
                     value={wsUrl}
                     onChange={(e) => setWsUrl(e.target.value)}
                     className="input-field !text-sm"
-                    placeholder="ws://localhost:8765"
+                    placeholder={backendWsUrl}
                   />
                 </div>
 
@@ -387,12 +398,12 @@ export default function SettingsPage() {
 
                 <div className="space-y-3">
                   {[
-                    { label: 'Version', value: 'v2.4.1' },
-                    { label: 'Build', value: '2026.06.08-stable' },
-                    { label: 'Author', value: 'E-NOSE Research Team' },
-                    { label: 'License', value: 'MIT License' },
+                    { label: 'Version', value: 'v1.0.0' },
+                    { label: 'Backend URL', value: API_BASE },
+                    { label: 'Active Model', value: modelStatus?.filename || 'None' },
+                    { label: 'Model Type', value: modelStatus?.model_type || '—' },
                     { label: 'Framework', value: 'React 18 + Vite' },
-                    { label: 'AI Backend', value: 'TensorFlow + scikit-learn' },
+                    { label: 'AI Backend', value: modelStatus?.model_type ? `scikit-learn (${modelStatus.model_type})` : 'scikit-learn' },
                   ].map((item) => (
                     <div
                       key={item.label}

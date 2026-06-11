@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useDroneData } from '../context/DroneDataContext';
 import Sidebar from '../components/Sidebar';
@@ -59,7 +59,7 @@ function AlertLevelBadge({ level }) {
 }
 
 export default function ReportsPage() {
-  const { data, alerts, getExportHistory, clearAlerts } = useDroneData();
+  const { data, alerts, getExportHistory, clearAlerts, totalSamples, systemHealth, pathHistory } = useDroneData();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -80,9 +80,37 @@ export default function ReportsPage() {
     }
   }, [getExportHistory]);
 
+  const pathDistanceKm = useCallback(() => {
+    if (!Array.isArray(pathHistory) || pathHistory.length < 2) return 0;
+    let total = 0;
+    for (let i = 1; i < pathHistory.length; i += 1) {
+      const prev = pathHistory[i - 1];
+      const curr = pathHistory[i];
+      const lat1 = prev?.lat ?? prev?.[0];
+      const lng1 = prev?.lng ?? prev?.[1];
+      const lat2 = curr?.lat ?? curr?.[0];
+      const lng2 = curr?.lng ?? curr?.[1];
+      if (lat1 != null && lng1 != null && lat2 != null && lng2 != null) {
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lng2 - lng1) * Math.PI) / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+        total += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
+    }
+    return total;
+  }, [pathHistory]);
+
+  const distance = pathDistanceKm();
+
   const handleGenerateReport = useCallback(() => {
-    generateMissionReport(data, alerts);
-  }, [data, alerts]);
+    generateMissionReport({
+      ...data,
+      samples_collected: totalSamples,
+      predictions_generated: systemHealth?.total_predictions ?? data.predictions_generated,
+      distance_covered: distance,
+    }, alerts);
+  }, [data, alerts, totalSamples, systemHealth, distance]);
 
   return (
     <motion.div
@@ -164,29 +192,29 @@ export default function ReportsPage() {
             <StatCard
               icon={FlaskConical}
               label="Total Samples"
-              value={data.samples_collected ?? 0}
+              value={totalSamples ?? 0}
               color="#0ea5e9"
               delay={0.15}
             />
             <StatCard
               icon={Brain}
               label="Predictions"
-              value={data.predictions_generated ?? 0}
+              value={systemHealth?.total_predictions ?? data.predictions_generated ?? 0}
               color="#8b5cf6"
               delay={0.2}
             />
             <StatCard
               icon={MapPin}
               label="Area Surveyed"
-              value={data.area_surveyed?.toFixed(1) ?? '0.0'}
-              unit="m²"
+              value={pathHistory?.length > 0 ? pathHistory.length.toString() : '0'}
+              unit="points"
               color="#10b981"
               delay={0.25}
             />
             <StatCard
               icon={Route}
               label="Distance Covered"
-              value={data.distance_covered?.toFixed(2) ?? '0.00'}
+              value={distance > 0 ? distance.toFixed(2) : '0.00'}
               unit="km"
               color="#f59e0b"
               delay={0.3}

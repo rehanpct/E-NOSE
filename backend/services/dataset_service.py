@@ -86,10 +86,22 @@ class DatasetService:
             
         # Simulate missing values check (in reality would check each row)
         missing_values = sum(1 for s in samples if s.temperature is None or s.raw_mq2 is None)
+
+        csv_size_bytes = 0
+        if os.path.isfile(csv_file):
+            csv_size_bytes = os.path.getsize(csv_file)
+
+        # Growth rate: samples added in last 5 minutes
+        from datetime import timedelta
+        five_min_ago = datetime.utcnow() - timedelta(minutes=5)
+        recent_samples = DatasetSample.query.filter(DatasetSample.timestamp >= five_min_ago).count()
+        growth_per_min = round(recent_samples / 5, 1) if recent_samples else 0
         
         return {
             "total_db_samples": total_db,
             "total_csv_samples": total_csv,
+            "csv_size_bytes": csv_size_bytes,
+            "growth_per_minute": growth_per_min,
             "integrity_match": total_db == max(0, total_csv),
             "class_distribution": class_counts,
             "imbalance_ratio": imbalance_ratio,

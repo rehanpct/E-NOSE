@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useDroneData } from '../context/DroneDataContext';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import { fetchJson } from '../utils/api';
 import {
   Crosshair, CheckCircle, AlertTriangle, XCircle, Clock, RotateCcw,
 } from 'lucide-react';
@@ -16,18 +17,21 @@ const SENSOR_CONFIG = [
   { key: 'bme280', name: 'BME280', description: 'Barometric Pressure', color: '#3b82f6' },
 ];
 
-// Fake recent calibration dates
-const getLastCalibrated = (index) => {
-  const now = new Date();
-  const offsets = [2, 5, 1, 8, 3, 6]; // days ago
-  const d = new Date(now.getTime() - offsets[index] * 24 * 60 * 60 * 1000);
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+// Baseline-based calibration display
+const getLastCalibrated = (sensorKey, baselines, lastUpdate) => {
+  if (lastUpdate) {
+    return new Date(lastUpdate).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+  if (baselines?.[sensorKey]?.baseline != null) {
+    return 'Baseline recorded';
+  }
+  return 'No data yet';
 };
 
 function CircularGauge({ percentage, color, size = 100 }) {
@@ -112,9 +116,16 @@ function StatusBadge({ status }) {
 }
 
 export default function CalibrationPage() {
-  const { data } = useDroneData();
+  const { data, sensorBaselines, lastReceivedTimestamp } = useDroneData();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [baselines, setBaselines] = useState(sensorBaselines);
+
+  useEffect(() => {
+    fetchJson('/api/sensor-baselines')
+      .then(setBaselines)
+      .catch(() => setBaselines(null));
+  }, [sensorBaselines]);
 
   const toggleSidebar = useCallback(() => setSidebarCollapsed((p) => !p), []);
 
@@ -168,8 +179,9 @@ export default function CalibrationPage() {
           {/* Sensor calibration cards grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {SENSOR_CONFIG.map((sensor, index) => {
-              const health = data.sensor_health?.[sensor.key] || 'healthy';
-              const healthPct = data.sensor_health_pct?.[sensor.key] ?? 95;
+              const baselineKey = sensor.key === 'dht11' ? null : sensor.key;
+              const health = data.sensor_health?.[sensor.key] || (data.sensor_health?.[baselineKey] ?? 'healthy');
+              const healthPct = data.sensor_health_pct?.[sensor.key] ?? data.sensor_health_pct?.[baselineKey] ?? (lastReceivedTimestamp ? 85 : 0);
 
               return (
                 <motion.div
@@ -228,7 +240,7 @@ export default function CalibrationPage() {
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
                         <Clock size={12} />
-                        <span>{getLastCalibrated(index)}</span>
+                        <span>{getLastCalibrated(baselineKey || sensor.key, baselines, lastReceivedTimestamp)}</span>
                       </div>
                     </div>
                   </div>

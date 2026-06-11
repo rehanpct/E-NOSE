@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { Database, Download, Trash2, PieChart as PieChartIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { fetchJson, formatBytes } from '../utils/api';
 
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
 
@@ -13,20 +14,25 @@ export default function DatasetPage() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/dataset/stats')
-      .then(res => res.json())
-      .then(data => setStats(data))
-      .catch(err => console.error(err));
+    const load = () => {
+      fetchJson('/api/dataset/stats')
+        .then(setStats)
+        .catch((err) => console.error(err));
+    };
+    load();
+    const interval = setInterval(load, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const totalSamples = stats?.quality?.total_db_samples || 0;
+  const growthRate = stats?.quality?.growth_per_minute ?? 0;
+  const csvSize = formatBytes(stats?.quality?.csv_size_bytes ?? 0);
   
   const classData = stats?.quality?.class_distribution ? 
     Object.entries(stats.quality.class_distribution).map(([name, value]) => ({name, value})) : 
     [];
     
   const missingValues = stats?.quality?.missing_values || 0;
-  const duplicateSamples = stats?.quality?.duplicate_samples || 0;
   const imbalanceRatio = stats?.quality?.imbalance_ratio || 0;
 
   return (
@@ -49,11 +55,11 @@ export default function DatasetPage() {
              </motion.div>
              <motion.div className="glass p-6 rounded-2xl" initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} transition={{delay:0.1}}>
                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-1 font-medium">Dataset Growth Rate</p>
-                 <p className="text-3xl font-bold text-emerald-500">+~30 / min</p>
+                 <p className="text-3xl font-bold text-emerald-500">{growthRate > 0 ? `+${growthRate} / min` : '—'}</p>
              </motion.div>
              <motion.div className="glass p-6 rounded-2xl" initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} transition={{delay:0.2}}>
-                 <p className="text-slate-500 dark:text-slate-400 text-sm mb-1 font-medium">Estimated CSV Size</p>
-                 <p className="text-3xl font-bold text-slate-800 dark:text-white">{(totalSamples * 125 / 1024).toFixed(1)} KB</p>
+                 <p className="text-slate-500 dark:text-slate-400 text-sm mb-1 font-medium">CSV File Size</p>
+                 <p className="text-3xl font-bold text-slate-800 dark:text-white">{csvSize}</p>
              </motion.div>
           </div>
 
@@ -67,27 +73,29 @@ export default function DatasetPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            {/* Charts */}
             <motion.div className="glass p-6 rounded-2xl" initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} transition={{delay:0.3}}>
               <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                 <PieChartIcon className="text-primary-500" /> Class Distribution
               </h3>
               <div style={{ height: 300 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={classData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                      {classData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.9)'}} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                {classData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={classData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                        {classData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.9)'}} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400 text-sm">No dataset samples collected yet</div>
+                )}
               </div>
             </motion.div>
 
-            {/* Actions */}
             <motion.div className="glass p-6 rounded-2xl" initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} transition={{delay:0.4}}>
               <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                 <Database className="text-primary-500" /> Management Actions
