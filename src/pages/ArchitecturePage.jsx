@@ -88,14 +88,7 @@ const componentDetails = [
     icon: Brain,
     color: '#8b5cf6',
     description: 'Machine learning pipeline for real-time gas classification and environmental risk assessment.',
-    specs: [
-      'Framework: TensorFlow Lite + scikit-learn',
-      'Models: XGBoost, Random Forest, SVM, DNN',
-      'Classes: 8 gas types',
-      'Inference Time: < 50ms',
-      'Accuracy: 96.8% (validated)',
-      'Features: 9 sensor channels',
-    ],
+    specs: [],
   },
   {
     id: 'dashboard',
@@ -121,9 +114,6 @@ const techStack = [
   { name: 'Recharts', color: '#8884d8', category: 'Frontend' },
   { name: 'Leaflet', color: '#199900', category: 'Frontend' },
   { name: 'Python', color: '#3776ab', category: 'Backend' },
-  { name: 'TensorFlow', color: '#ff6f00', category: 'AI/ML' },
-  { name: 'scikit-learn', color: '#f7931e', category: 'AI/ML' },
-  { name: 'XGBoost', color: '#1a73e8', category: 'AI/ML' },
   { name: 'Arduino', color: '#00979d', category: 'Hardware' },
   { name: 'MAVLink', color: '#e44d26', category: 'Protocol' },
   { name: 'WebSocket', color: '#4caf50', category: 'Protocol' },
@@ -334,15 +324,49 @@ export default function ArchitecturePage() {
                       >
                         <div className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-800">
                           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-                            {comp.specs.map((spec, j) => {
-                              let displaySpec = spec;
-                              if (comp.id === 'ai-engine' && spec.startsWith('Accuracy:') && modelStatus?.active_metrics?.accuracy != null) {
-                                displaySpec = `Accuracy: ${(modelStatus.active_metrics.accuracy * 100).toFixed(1)}% (deployed model)`;
-                              }
-                              if (comp.id === 'ai-engine' && spec.startsWith('Models:') && modelStatus?.model_type) {
-                                displaySpec = `Active Model: ${modelStatus.model_type} (${modelStatus.filename || 'None'})`;
-                              }
-                              return (
+                            {(comp.id === 'ai-engine' ? (
+                              (() => {
+                                if (!modelStatus) {
+                                  return [
+                                    "Framework: Metadata unavailable",
+                                    "Active Model: Metadata unavailable",
+                                    "Classes: Metadata unavailable",
+                                    "Inference Time: < 50ms",
+                                    "Accuracy: Accuracy metadata unavailable",
+                                    "Features: Metadata unavailable"
+                                  ];
+                                }
+                                if (!modelStatus.loaded) {
+                                  return [
+                                    "Framework: No model deployed",
+                                    "Active Model: No model deployed",
+                                    "Classes: No model deployed",
+                                    "Inference Time: —",
+                                    "Accuracy: No model deployed",
+                                    "Features: No model deployed"
+                                  ];
+                                }
+                                const framework = modelStatus.framework || "Metadata unavailable";
+                                const modelType = modelStatus.model_type || "Metadata unavailable";
+                                const filename = modelStatus.filename || "Metadata unavailable";
+                                const classesCount = modelStatus.classes?.length ?? 0;
+                                const classesList = modelStatus.classes ? modelStatus.classes.join(', ') : "Metadata unavailable";
+                                const accuracy = modelStatus.active_metrics?.accuracy != null 
+                                  ? `${(modelStatus.active_metrics.accuracy * 100).toFixed(1)}%`
+                                  : "Accuracy metadata unavailable";
+                                const featureCount = modelStatus.feature_count ?? 0;
+                                const featureNames = modelStatus.features ? modelStatus.features.join(', ') : "Metadata unavailable";
+
+                                return [
+                                  `Framework: ${framework}`,
+                                  `Active Model: ${modelType} (${filename})`,
+                                  `Classes: ${classesCount} types (${classesList})`,
+                                  `Inference Time: < 50ms`,
+                                  `Accuracy: ${accuracy}`,
+                                  `Features: ${featureCount} channels (${featureNames})`
+                                ];
+                              })()
+                            ) : comp.specs).map((displaySpec, j) => (
                               <li
                                 key={j}
                                 className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300"
@@ -353,7 +377,7 @@ export default function ArchitecturePage() {
                                 />
                                 {displaySpec}
                               </li>
-                            );})}
+                            ))}
                           </ul>
                         </div>
                       </motion.div>

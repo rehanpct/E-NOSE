@@ -24,6 +24,22 @@ export default function RnDPage() {
     ? modelStatus.feature_importance
     : [];
 
+  let featureImportanceMsg = "Metadata unavailable";
+  let displayModelType = "Metadata unavailable";
+  if (modelStatus) {
+    if (modelStatus.loaded) {
+      displayModelType = modelStatus.model_type || "Unknown";
+      if (modelStatus.feature_importance && modelStatus.feature_importance.length > 0) {
+        featureImportanceMsg = null;
+      } else {
+        featureImportanceMsg = "Feature importance not available for this model.";
+      }
+    } else {
+      displayModelType = "No model deployed";
+      featureImportanceMsg = "No model deployed";
+    }
+  }
+
   const correlationData = analytics?.sensor_correlation
     ? Object.entries(analytics.sensor_correlation).map(([subject, A]) => ({
         subject,
@@ -35,18 +51,40 @@ export default function RnDPage() {
   const activeMetrics = modelStatus?.active_metrics || {};
   const historyRows = [];
 
-  if (modelStatus?.filename) {
+  if (modelStatus) {
+    if (modelStatus.loaded) {
+      historyRows.push({
+        version: `${modelStatus.filename || "e_nose_model.pkl"} (Active)`,
+        date: activeMetrics.deployed_at
+          ? new Date(activeMetrics.deployed_at).toLocaleDateString()
+          : modelStatus.model_modified
+            ? new Date(modelStatus.model_modified).toLocaleDateString()
+            : '—',
+        accuracy: activeMetrics.accuracy != null 
+          ? `${(activeMetrics.accuracy * 100).toFixed(1)}%` 
+          : "Accuracy metadata unavailable",
+        f1: activeMetrics.f1_score ?? '—',
+        datasetSize: activeMetrics.training_samples ?? analytics?.reading_count ?? '—',
+        status: 'Production',
+      });
+    } else {
+      historyRows.push({
+        version: 'No model deployed',
+        date: '—',
+        accuracy: 'No model deployed',
+        f1: '—',
+        datasetSize: '—',
+        status: 'Offline',
+      });
+    }
+  } else {
     historyRows.push({
-      version: `${modelStatus.filename} (Active)`,
-      date: activeMetrics.deployed_at
-        ? new Date(activeMetrics.deployed_at).toLocaleDateString()
-        : modelStatus.model_modified
-          ? new Date(modelStatus.model_modified).toLocaleDateString()
-          : '—',
-      accuracy: activeMetrics.accuracy != null ? `${(activeMetrics.accuracy * 100).toFixed(1)}%` : '—',
-      f1: activeMetrics.f1_score ?? '—',
-      datasetSize: activeMetrics.training_samples ?? analytics?.reading_count ?? '—',
-      status: 'Production',
+      version: 'Metadata unavailable',
+      date: '—',
+      accuracy: 'Metadata unavailable',
+      f1: '—',
+      datasetSize: '—',
+      status: 'Offline',
     });
   }
 
@@ -78,10 +116,10 @@ export default function RnDPage() {
             
             <motion.div className="glass p-6 rounded-2xl" initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}}>
               <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-                <BarChart2 className="text-primary-500" /> Feature Importance ({modelStatus?.model_type || 'Model'})
+                <BarChart2 className="text-primary-500" /> Feature Importance ({displayModelType})
               </h3>
               <div style={{ height: 300 }}>
-                {featureImportance.length > 0 ? (
+                {featureImportanceMsg === null ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={featureImportance} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" horizontal={false} />
@@ -92,7 +130,7 @@ export default function RnDPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-400 text-sm">No feature importance data available</div>
+                  <div className="flex items-center justify-center h-full text-slate-400 text-sm">{featureImportanceMsg}</div>
                 )}
               </div>
             </motion.div>

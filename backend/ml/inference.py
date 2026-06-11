@@ -1,8 +1,8 @@
 import os
-import glob
 import joblib
 import pandas as pd
 import numpy as np
+import datetime
 
 class ENOSEPredictor:
     def __init__(self, models_dir="."):
@@ -17,53 +17,15 @@ class ENOSEPredictor:
 
     def load_model(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        target_dir = os.path.join(base_dir, self.models_dir)
+        target_file = os.path.join(base_dir, "e_nose_model.pkl")
 
-        pattern_pkl = os.path.join(target_dir, "*.pkl")
-        pattern_joblib = os.path.join(target_dir, "*.joblib")
-
-        files = glob.glob(pattern_pkl) + glob.glob(pattern_joblib)
-
-        print("\n" + "=" * 70)
-        print("SEARCHING FOR MODELS")
-        print("=" * 70)
-
-        if not files:
-            print("No model files found.")
-            self.status = "Failed - No model found"
-            return
-
-        for f in files:
-            print("FOUND:", f)
-
-        target_file = None
-
-        for f in files:
-            if os.path.basename(f).lower() == "e_nose_model_new.pkl":
-                target_file = f
-                print("\nUsing preferred model: e_nose_model_new.pkl")
-                break
-
-        if not target_file:
-            for f in files:
-                if os.path.basename(f).lower() == "e_nose_model.pkl":
-                    target_file = f
-                    print("\nUsing fallback model: e_nose_model.pkl")
-                    break
-
-        if not target_file:
-            files.sort(key=os.path.getmtime, reverse=True)
-            target_file = files[0]
-            print("\nUsing newest available model")
+        if not os.path.exists(target_file):
+            msg = f"CRITICAL ERROR: Model file not found at {target_file}"
+            print(msg)
+            raise FileNotFoundError(msg)
 
         try:
-            print("\n" + "=" * 70)
-            print("LOADING MODEL:")
-            print(target_file)
-            print("=" * 70)
-
             self.model = joblib.load(target_file)
-
             self.model_filename = os.path.basename(target_file)
             self.model_type = type(self.model).__name__
             self.status = "Loaded"
@@ -80,12 +42,67 @@ class ENOSEPredictor:
             else:
                 self.classes = []
 
-            print("MODEL TYPE:", self.model_type)
+            # Print active model metadata exactly once in the required format
+            print("ACTIVE MODEL")
+            print(f"FILE: {self.model_filename}")
+            print(f"TYPE: {self.model_type}")
+            print(f"FEATURES: {self.features}")
+            print(f"CLASSES: {self.classes}")
+            print(f"MODEL PATH: {os.path.abspath(target_file)}")
 
         except Exception as e:
-            print("ERROR:", e)
+            print("ERROR LOADING MODEL:", e)
             self.status = f"Failed - {str(e)}"
             self.model = None
+            self.model_filename = None
+            self.model_type = "Unknown"
+            self.features = []
+            self.classes = []
+            raise e
+
+    def get_metadata(self):
+        training_timestamp = None
+        if self.model is not None:
+            for attr in ['training_timestamp_', 'trained_at_', 'timestamp_', 'training_time_', 'deployed_at']:
+                if hasattr(self.model, attr):
+                    training_timestamp = str(getattr(self.model, attr))
+                    break
+
+        if not training_timestamp and self.model_filename:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            filepath = os.path.join(base_dir, self.model_filename)
+            if os.path.exists(filepath):
+                try:
+                    mtime = os.path.getmtime(filepath)
+                    training_timestamp = datetime.datetime.utcfromtimestamp(mtime).isoformat() + 'Z'
+                except Exception:
+                    pass
+
+        framework = "Unknown"
+        if self.model is not None:
+            module_name = type(self.model).__module__
+            if module_name.startswith('sklearn'):
+                framework = "scikit-learn"
+            elif module_name.startswith('xgboost'):
+                framework = "XGBoost"
+            elif module_name.startswith('lightgbm'):
+                framework = "LightGBM"
+            elif module_name.startswith('keras') or module_name.startswith('tensorflow'):
+                framework = "TensorFlow/Keras"
+            else:
+                framework = module_name.split('.')[0]
+
+        return {
+            "model_filename": self.model_filename,
+            "model_type": self.model_type if self.model is not None else "Unknown",
+            "classes": self.classes,
+            "feature_names": self.features,
+            "training_timestamp": training_timestamp,
+            "feature_count": len(self.features) if self.features else 0,
+            "status": self.status,
+            "loaded": self.model is not None,
+            "framework": framework
+        }
 
     
 

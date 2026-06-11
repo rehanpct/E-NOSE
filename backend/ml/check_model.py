@@ -1,8 +1,10 @@
 # check_model.py
 
+import os
 import joblib
 
-model = joblib.load(r"E:\ENOSE\backend\ml\e_nose_model.pkl")
+base_dir = os.path.dirname(os.path.abspath(__file__))
+model = joblib.load(os.path.join(base_dir, "e_nose_model.pkl"))
 
 print(type(model).__name__)
 

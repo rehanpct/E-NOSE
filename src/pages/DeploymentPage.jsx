@@ -85,16 +85,36 @@ export default function DeploymentPage() {
     }
   };
 
-  const activeMetrics = deploymentInfo?.active_metrics || modelStatus?.active_metrics || {};
-  const accuracy = activeMetrics.accuracy != null ? `${(activeMetrics.accuracy * 100).toFixed(1)}%` : '—';
+  // Handle no model / unavailable metadata checks
+  const isLoaded = modelStatus?.loaded || (deploymentInfo && deploymentInfo.model_status === 'Loaded');
+  const metadataAvailable = modelStatus != null || deploymentInfo != null;
+
+  let modelName = "Metadata unavailable";
+  let modelType = "Metadata unavailable";
+  let accuracy = "Metadata unavailable";
+  
+  if (metadataAvailable) {
+    if (isLoaded) {
+      modelName = modelStatus?.filename || deploymentInfo?.active_model || "Metadata unavailable";
+      modelType = modelStatus?.model_type || deploymentInfo?.model_type || "Metadata unavailable";
+      const activeMetrics = modelStatus?.active_metrics || deploymentInfo?.active_metrics;
+      accuracy = activeMetrics?.accuracy != null 
+        ? `${(activeMetrics.accuracy * 100).toFixed(1)}%`
+        : "Accuracy metadata unavailable";
+    } else {
+      modelName = "No model deployed";
+      modelType = "No model deployed";
+      accuracy = "No model deployed";
+    }
+  }
+
   const uptimeSeconds = deploymentInfo?.uptime_seconds ?? systemHealth?.uptime ?? 0;
   const predictionsPerMin = deploymentInfo?.predictions_per_minute ?? systemHealth?.predictions_per_minute ?? 0;
-  const modelName = deploymentInfo?.active_model || modelStatus?.filename || data.model || 'None';
-  const modelLoaded = modelStatus?.loaded || deploymentInfo?.model_status === 'Loaded';
+  const modelLoaded = isLoaded;
 
   const perfMetrics = [
     { label: 'Predictions/min', value: predictionsPerMin || '—', icon: Zap, color: '#0ea5e9' },
-    { label: 'Model Type', value: deploymentInfo?.model_type || modelStatus?.model_type || '—', icon: Gauge, color: '#10b981' },
+    { label: 'Model Type', value: modelType, icon: Gauge, color: '#10b981' },
     { label: 'Model Accuracy', value: accuracy, icon: Target, color: '#8b5cf6' },
     { label: 'Uptime', value: formatUptime(uptimeSeconds), icon: Shield, color: '#f59e0b' },
   ];

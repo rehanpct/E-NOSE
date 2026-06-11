@@ -12,8 +12,8 @@ from datetime import datetime
 class TrainingService:
     def __init__(self):
         self.pending_model_path = os.path.join(os.path.dirname(__file__), '..', 'ml', 'pending_model.pkl')
-        self.active_model_dir = os.path.join(os.path.dirname(__file__), '..', 'ml')
-        self.active_metrics_path = os.path.join(self.active_model_dir, 'active_model_metrics.json')
+        self.model_dir = os.path.join(os.path.dirname(__file__), '..', 'ml')
+        self.active_metrics_path = os.path.join(self.model_dir, 'active_model_metrics.json')
         self.last_metrics = None
         self.active_metrics = self._load_active_metrics()
 
@@ -89,20 +89,20 @@ class TrainingService:
         # Currently active model filename is in predictor
         active_filename = predictor.model_filename
         if active_filename:
-            active_path = os.path.join(self.active_model_dir, active_filename)
-            backup_path = os.path.join(self.active_model_dir, f"model_backup_{timestamp}.pkl")
+            active_path = os.path.join(self.model_dir, active_filename)
+            backup_path = os.path.join(self.model_dir, f"e_nose_model_backup_{timestamp}.pkl")
             if os.path.exists(active_path):
                 os.rename(active_path, backup_path)
                 
-        # Deploy new model as active_model.pkl
-        new_active_path = os.path.join(self.active_model_dir, 'active_model.pkl')
+        # Deploy new model as e_nose_model.pkl
+        new_active_path = os.path.join(self.model_dir, 'e_nose_model.pkl')
         os.rename(self.pending_model_path, new_active_path)
         
         # Reload predictor
         predictor.load_model()
 
         if self.last_metrics:
-            self._save_active_metrics(self.last_metrics, 'active_model.pkl')
+            self._save_active_metrics(self.last_metrics, 'e_nose_model.pkl')
         
         return {
             "status": "success",
@@ -112,11 +112,11 @@ class TrainingService:
     def get_deployment_history(self):
         """List model backup files as deployment history entries."""
         history = []
-        if not os.path.isdir(self.active_model_dir):
+        if not os.path.isdir(self.model_dir):
             return history
-        for name in os.listdir(self.active_model_dir):
-            if name.startswith('model_backup_') and name.endswith('.pkl'):
-                path = os.path.join(self.active_model_dir, name)
+        for name in os.listdir(self.model_dir):
+            if name.startswith('e_nose_model_backup_') and name.endswith('.pkl'):
+                path = os.path.join(self.model_dir, name)
                 mtime = datetime.utcfromtimestamp(os.path.getmtime(path))
                 history.append({
                     'filename': name,

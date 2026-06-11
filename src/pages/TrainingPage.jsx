@@ -27,17 +27,56 @@ export default function TrainingPage() {
     fetchModelStatus();
   }, []);
 
-  const activeMetrics = modelStatus?.active_metrics || {};
-  const activeAccuracy = activeMetrics.accuracy != null ? `${(activeMetrics.accuracy * 100).toFixed(1)}%` : 'N/A';
-  const activePrecision = activeMetrics.precision ?? 'N/A';
-  const activeRecall = activeMetrics.recall ?? 'N/A';
-  const activeF1 = activeMetrics.f1_score ?? 'N/A';
-  const activeDatasetSize = activeMetrics.training_samples ?? datasetStats?.quality?.total_db_samples ?? 'N/A';
-  const activeTrainingDate = activeMetrics.deployed_at
-    ? new Date(activeMetrics.deployed_at).toLocaleDateString()
-    : modelStatus?.model_modified
-      ? new Date(modelStatus.model_modified).toLocaleDateString()
-      : 'N/A';
+  const metadataAvailable = modelStatus != null;
+  const isLoaded = modelStatus?.loaded;
+
+  let modelStatusText = "Metadata unavailable";
+  let modelFilename = "Metadata unavailable";
+  let modelAlgorithm = "Metadata unavailable";
+  let activeAccuracy = "Metadata unavailable";
+  let activePrecision = "Metadata unavailable";
+  let activeRecall = "Metadata unavailable";
+  let activeF1 = "Metadata unavailable";
+  let activeDatasetSize = "Metadata unavailable";
+  let activeTrainingDate = "Metadata unavailable";
+  let activeFeatures = "Metadata unavailable";
+  let activeClasses = "Metadata unavailable";
+
+  if (metadataAvailable) {
+    if (isLoaded) {
+      modelStatusText = modelStatus.status || "Loaded";
+      modelFilename = modelStatus.filename || "Metadata unavailable";
+      modelAlgorithm = modelStatus.model_type || "Metadata unavailable";
+      
+      const activeMetrics = modelStatus.active_metrics || {};
+      activeAccuracy = activeMetrics.accuracy != null 
+        ? `${(activeMetrics.accuracy * 100).toFixed(1)}%` 
+        : "Accuracy metadata unavailable";
+      activePrecision = activeMetrics.precision ?? "Metadata unavailable";
+      activeRecall = activeMetrics.recall ?? "Metadata unavailable";
+      activeF1 = activeMetrics.f1_score ?? "Metadata unavailable";
+      activeDatasetSize = activeMetrics.training_samples ?? datasetStats?.quality?.total_db_samples ?? "Metadata unavailable";
+      activeTrainingDate = activeMetrics.deployed_at
+        ? new Date(activeMetrics.deployed_at).toLocaleDateString()
+        : modelStatus.model_modified
+          ? new Date(modelStatus.model_modified).toLocaleDateString()
+          : "Metadata unavailable";
+      activeFeatures = modelStatus.features ? modelStatus.features.join(', ') : "Metadata unavailable";
+      activeClasses = modelStatus.classes ? modelStatus.classes.join(', ') : "Metadata unavailable";
+    } else {
+      modelStatusText = "No model deployed";
+      modelFilename = "No model deployed";
+      modelAlgorithm = "No model deployed";
+      activeAccuracy = "No model deployed";
+      activePrecision = "No model deployed";
+      activeRecall = "No model deployed";
+      activeF1 = "No model deployed";
+      activeDatasetSize = "No model deployed";
+      activeTrainingDate = "No model deployed";
+      activeFeatures = "No model deployed";
+      activeClasses = "No model deployed";
+    }
+  }
 
   const handleTrain = async () => {
     setTrainingState('training');
@@ -100,36 +139,32 @@ export default function TrainingPage() {
                 <Shield className="text-emerald-500" /> Active Production Model
               </h3>
               
-              {modelStatus ? (
-                <div className="space-y-3">
-                  <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
-                    <span className="text-slate-500 dark:text-slate-400">Status</span>
-                    <span className="font-semibold text-emerald-500">{modelStatus.status}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
-                    <span className="text-slate-500 dark:text-slate-400">Filename</span>
-                    <span className="font-mono text-slate-700 dark:text-slate-300">{modelStatus.filename || 'N/A'}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
-                    <span className="text-slate-500 dark:text-slate-400">Algorithm</span>
-                    <span className="text-slate-700 dark:text-slate-300">{modelStatus.model_type}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
-                    <span className="text-slate-500 dark:text-slate-400">Accuracy</span>
-                    <span className="text-slate-700 dark:text-slate-300">{activeAccuracy}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
-                    <span className="text-slate-500 dark:text-slate-400">Input Features</span>
-                    <span className="text-slate-700 dark:text-slate-300">{modelStatus.features?.join(', ')}</span>
-                  </div>
-                  <div className="flex justify-between pb-2">
-                    <span className="text-slate-500 dark:text-slate-400">Output Classes</span>
-                    <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]" title={modelStatus.classes?.join(', ')}>{modelStatus.classes?.join(', ')}</span>
-                  </div>
+              <div className="space-y-3">
+                <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
+                  <span className="text-slate-500 dark:text-slate-400">Status</span>
+                  <span className="font-semibold text-emerald-500">{modelStatusText}</span>
                 </div>
-              ) : (
-                <div className="text-slate-400 text-sm">Loading model info...</div>
-              )}
+                <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
+                  <span className="text-slate-500 dark:text-slate-400">Filename</span>
+                  <span className="font-mono text-slate-700 dark:text-slate-300">{modelFilename}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
+                  <span className="text-slate-500 dark:text-slate-400">Algorithm</span>
+                  <span className="text-slate-700 dark:text-slate-300">{modelAlgorithm}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
+                  <span className="text-slate-500 dark:text-slate-400">Accuracy</span>
+                  <span className="text-slate-700 dark:text-slate-300">{activeAccuracy}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2">
+                  <span className="text-slate-500 dark:text-slate-400">Input Features</span>
+                  <span className="text-slate-700 dark:text-slate-300">{activeFeatures}</span>
+                </div>
+                <div className="flex justify-between pb-2">
+                  <span className="text-slate-500 dark:text-slate-400">Output Classes</span>
+                  <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]" title={activeClasses}>{activeClasses}</span>
+                </div>
+              </div>
             </motion.div>
 
             <motion.div className="glass p-6 rounded-2xl" initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} transition={{delay: 0.1}}>
@@ -140,7 +175,7 @@ export default function TrainingPage() {
               <div className="flex flex-col h-full justify-between">
                 <div>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-                    Retraining the model will pull all historical Dataset Samples from the database, perform a Train/Test split, and evaluate a new Random Forest classifier.
+                    Retraining the model will pull all historical Dataset Samples from the database, perform a Train/Test split, and evaluate a new classifier.
                   </p>
                   
                   {trainingState === 'idle' && (

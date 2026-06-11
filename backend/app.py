@@ -33,7 +33,7 @@ app.config['START_TIME'] = datetime.utcnow()
 
 
 
-@@app.route('/api/sensor-data', methods=['POST'])
+@app.route('/api/sensor-data', methods=['POST'])
 def receive_sensor_data():
     data = request.json
 
@@ -225,12 +225,27 @@ def system_health():
         "active_model": predictor.model_filename or "None"
     })
 
+@app.route('/api/model-debug', methods=['GET'])
+def model_debug():
+    metadata = predictor.get_metadata()
+    return jsonify({
+        "loaded": metadata["loaded"],
+        "filename": metadata["model_filename"],
+        "model_type": metadata["model_type"],
+        "features": metadata["feature_names"],
+        "classes": metadata["classes"],
+        "feature_count": metadata["feature_count"],
+        "framework": metadata.get("framework", "Unknown")
+    })
+
 @app.route('/api/model-status', methods=['GET'])
 def model_status():
-    feature_importance = []
+    metadata = predictor.get_metadata()
+    feature_importance = None
     if predictor.model is not None and hasattr(predictor.model, 'feature_importances_'):
+        feature_importance = []
         importances = predictor.model.feature_importances_
-        features = predictor.features or []
+        features = metadata["feature_names"] or []
         for feat, imp in zip(features, importances):
             feature_importance.append({
                 'name': feat.upper() if feat.startswith('mq') else feat.capitalize(),
@@ -238,28 +253,23 @@ def model_status():
             })
         feature_importance.sort(key=lambda x: x['value'], reverse=True)
 
-    model_path = None
-    model_modified = None
-    if predictor.model_filename:
-        model_path = os.path.join(os.path.dirname(__file__), 'ml', predictor.model_filename)
-        if os.path.exists(model_path):
-            model_modified = datetime.utcfromtimestamp(os.path.getmtime(model_path)).isoformat() + 'Z'
-
     active_metrics = trainer.active_metrics or {}
 
     return jsonify({
-        "loaded": "Loaded" in predictor.status,
-        "model_type": predictor.model_type,
-        "feature_count": len(predictor.features),
-        "features": predictor.features,
-        "classes": predictor.classes,
-        "filename": predictor.model_filename,
-        "status": predictor.status,
+        "loaded": metadata["loaded"],
+        "model_type": metadata["model_type"],
+        "feature_count": metadata["feature_count"],
+        "features": metadata["feature_names"],
+        "classes": metadata["classes"],
+        "filename": metadata["model_filename"],
+        "status": metadata["status"],
         "feature_importance": feature_importance,
-        "deployed_at": active_metrics.get('deployed_at'),
+        "deployed_at": metadata["training_timestamp"] or active_metrics.get('deployed_at'),
         "active_metrics": active_metrics,
-        "model_modified": model_modified,
+        "model_modified": metadata["training_timestamp"],
+        "framework": metadata.get("framework", "Unknown"),
     })
+
 
 @app.route('/api/predict-manual', methods=['POST'])
 def predict_manual():
@@ -416,18 +426,19 @@ def get_trends():
 
 @app.route('/api/deployment-info', methods=['GET'])
 def deployment_info():
+    metadata = predictor.get_metadata()
     active_metrics = trainer.active_metrics or {}
     history = trainer.get_deployment_history()
 
     # Build deployment log from model backups + current model load event
     logs = []
-    if predictor.model_filename and predictor.model_filename != "None":
-        model_path = os.path.join(os.path.dirname(__file__), 'ml', predictor.model_filename)
+    if metadata["loaded"]:
+        model_path = os.path.join(os.path.dirname(__file__), 'ml', metadata["model_filename"])
         if os.path.exists(model_path):
             mtime = datetime.utcfromtimestamp(os.path.getmtime(model_path))
             logs.append({
                 'timestamp': mtime.strftime('%H:%M:%S'),
-                'message': f'Model {predictor.model_filename} active ({predictor.model_type})',
+                'message': f'Model {metadata["model_filename"]} active ({metadata["model_type"]})',
                 'level': 'success',
             })
     for entry in history[:5]:
@@ -440,10 +451,10 @@ def deployment_info():
     uptime = (datetime.utcnow() - app.config['START_TIME']).total_seconds()
 
     return jsonify({
-        "active_model": predictor.model_filename,
-        "model_type": predictor.model_type,
-        "model_status": predictor.status,
-        "deployed_at": active_metrics.get('deployed_at'),
+        "active_model": metadata["model_filename"],
+        "model_type": metadata["model_type"],
+        "model_status": metadata["status"],
+        "deployed_at": metadata["training_timestamp"] or active_metrics.get('deployed_at'),
         "active_metrics": active_metrics,
         "deployment_history": history,
         "deployment_log": logs,
@@ -479,7 +490,7 @@ def run_backup():
         # Backup Model
         model_path = os.path.join(os.path.dirname(__file__), 'ml', 'e_nose_model.pkl')
         if os.path.exists(model_path):
-            shutil.copy2(model_path, os.path.join(backup_dir, 'models', f'active_model_{timestamp}.pkl'))
+            shutil.copy2(model_path, os.path.join(backup_dir, 'models', f'e_nose_model_backup_{timestamp}.pkl'))
             
         return jsonify({"status": "success", "message": f"Backup completed at {timestamp}"})
     except Exception as e:
