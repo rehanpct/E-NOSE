@@ -355,7 +355,7 @@ body.dark {
 
 /* ===== CARD VARIANTS ===== */
 .card-sensor {
-  padding: 16px; /* Reduced from 20px for density */
+  padding: 12px; /* Reduced for high density */
   position: relative;
   overflow: hidden;
 }

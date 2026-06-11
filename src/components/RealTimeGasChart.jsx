@@ -52,58 +52,68 @@ export default function RealTimeGasChart() {
     'MQ-135': '#8b5cf6',
   };
 
+  const isEmpty = chartData.length === 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
-      className="glass card-sensor span-2"
+      className="glass card-sensor h-full flex flex-col justify-between"
+      style={{ borderRadius: '8px' }}
     >
       <div className="section-title">
         <Activity size={14} />
         Real-Time Gas Concentrations
       </div>
-      <div className="mt-3" style={{ height: 280 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(148,163,184,0.15)"
-            />
-            <XAxis
-              dataKey="time"
-              tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
-              interval="preserveStartEnd"
-              tickLine={false}
-              axisLine={{ stroke: 'var(--color-border)' }}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
-              tickLine={false}
-              axisLine={{ stroke: 'var(--color-border)' }}
-              width={35}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-              iconType="circle"
-              iconSize={8}
-            />
-            {Object.entries(lineColors).map(([name, color]) => (
-              <Line
-                key={name}
-                type="monotone"
-                dataKey={name}
-                stroke={color}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, strokeWidth: 0, fill: color }}
+      <div className="mt-2" style={{ height: 190 }}>
+        {isEmpty ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-500 italic text-xs">
+            <Activity className="opacity-20 mb-1 animate-pulse" size={20} />
+            <span>Waiting for sensor data</span>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(148,163,184,0.15)"
               />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
+              <XAxis
+                dataKey="time"
+                tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+                interval="preserveStartEnd"
+                tickLine={false}
+                axisLine={{ stroke: 'var(--color-border)' }}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+                tickLine={false}
+                axisLine={{ stroke: 'var(--color-border)' }}
+                width={30}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                wrapperStyle={{ fontSize: 10, paddingTop: 4 }}
+                iconType="circle"
+                iconSize={6}
+              />
+              {Object.entries(lineColors).map(([name, color]) => (
+                <Line
+                  key={name}
+                  type="monotone"
+                  dataKey={name}
+                  stroke={color}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 3, strokeWidth: 0, fill: color }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
-      <div className="flex items-center gap-4 mt-3 text-xs text-slate-400 dark:text-slate-500">
+      <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-450 dark:text-slate-550">
         <span>Last 60 readings</span>
         <span>•</span>
         <span>Updated every 2s</span>

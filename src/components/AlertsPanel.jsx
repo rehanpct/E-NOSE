@@ -80,22 +80,11 @@ function AlertItem({ alert, index }) {
 
 function EmptyState() {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4 }}
-      className="flex flex-col items-center justify-center py-12"
-    >
-      <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-4">
-        <ShieldCheck size={28} className="text-emerald-500" />
-      </div>
-      <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1">
-        All Clear
-      </p>
-      <p className="text-xs text-slate-400 dark:text-slate-500 text-center max-w-[200px]">
-        No active alerts. The system is operating normally.
-      </p>
-    </motion.div>
+    <div className="flex flex-col items-center justify-center py-4 text-slate-400 dark:text-slate-500">
+      <ShieldCheck size={20} className="text-emerald-400 mb-1.5" />
+      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">No Active Alerts</p>
+      <p className="text-[10px] text-slate-400 dark:text-slate-500">System operating normally</p>
+    </div>
   );
 }
 
@@ -112,7 +101,7 @@ export default function AlertsPanel() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="glass card-sensor"
+      className="glass card-sensor h-full flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -153,10 +142,10 @@ export default function AlertsPanel() {
         </div>
       </div>
 
-      {/* Scrollable alerts list */}
+      {/* Fixed-height scrollable alerts list — never grows the card */}
       <div
-        className="overflow-y-auto pr-1"
-        style={{ maxHeight: '300px' }}
+        className="overflow-y-auto pr-1 custom-scrollbar"
+        style={{ maxHeight: '260px', minHeight: '80px' }}
       >
         {alertCount === 0 ? (
           <EmptyState />

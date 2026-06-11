@@ -141,6 +141,19 @@ def receive_sensor_data():
             eqs_score
         )
 
+        # Enrich hazard_level with prediction confidence + gas-type severity
+        gas = (pred_result.get('gas', '') or '').lower()
+        conf = pred_result.get('confidence', 0) or 0
+        if any(k in gas for k in ('smoke', 'lpg', 'carbon', ' co')):
+            gas_bonus = 40
+        elif any(k in gas for k in ('alcohol', 'perfume', 'mixed')):
+            gas_bonus = 20
+        else:
+            gas_bonus = 0
+        indices['hazard_level'] = round(
+            min(100, indices['hazard_level'] * 0.6 + (conf / 100) * gas_bonus), 2
+        )
+
         reading_dict.update(indices)
 
         print("\nEMITTING SENSOR UPDATE")
@@ -355,8 +368,40 @@ def prediction_history():
 def get_latest():
     reading = SensorReading.query.order_by(SensorReading.timestamp.desc()).first()
     prediction = Prediction.query.order_by(Prediction.timestamp.desc()).first()
+
+    sensor_dict = None
+    if reading:
+        sensor_dict = reading.to_dict()
+        # Compute all 5 derived indices so the frontend gauges are populated
+        # on page load (not just when a live sensor_update socket event fires).
+        norm_dict = {
+            'mq2':   reading.normalized_mq2,
+            'mq5':   reading.normalized_mq5,
+            'mq9':   reading.normalized_mq9,
+            'mq135': reading.normalized_mq135,
+        }
+        eqs_val = reading.eqs or 0.0
+
+        # Also compute a richer hazard_level that factors in prediction confidence
+        base_hazard = aqi_engine.calculate_indices(norm_dict, eqs_val)
+
+        if prediction:
+            gas = (prediction.predicted_gas or '').lower()
+            conf = prediction.confidence or 0
+            # Gas-type severity modifier (0-40 bonus)
+            if any(k in gas for k in ('smoke', 'lpg', 'carbon', ' co')):
+                gas_bonus = 40
+            elif any(k in gas for k in ('alcohol', 'perfume', 'mixed')):
+                gas_bonus = 20
+            else:
+                gas_bonus = 0
+            hazard = min(100, base_hazard['hazard_level'] * 0.6 + (conf / 100) * gas_bonus)
+            base_hazard['hazard_level'] = round(hazard, 2)
+
+        sensor_dict.update(base_hazard)
+
     return jsonify({
-        "sensor": reading.to_dict() if reading else None,
+        "sensor": sensor_dict,
         "prediction": prediction.to_dict() if prediction else None
     })
 

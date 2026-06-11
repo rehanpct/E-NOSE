@@ -129,11 +129,11 @@ export function DroneDataProvider({ children }) {
     battery: null,
     signal_strength: null,
     eqs: null,
-    smoke_index: 0,
-    voc_index: 0,
-    air_quality_index: 0,
-    hazard_level: 0,
-    pollution_score: 0,
+    smoke_index: null,
+    voc_index: null,
+    air_quality_index: null,
+    hazard_level: null,
+    pollution_score: null,
     risk_level: 'Low',
     model: null,
     samples_collected: 0,
@@ -160,18 +160,45 @@ export function DroneDataProvider({ children }) {
   const samplesPerMinuteRef = useRef([]);
 
   const addActivity = useCallback((message, type = 'info') => {
-    persisted.activityIdCounter += 1;
-    setActivityFeed((prev) =>
-      [
+    const DEDUP_WINDOW_MS = 10000;
+    setActivityFeed((prev) => {
+      // Check if the same message exists within the dedup window
+      const now = Date.now();
+      const existingIdx = prev.findIndex(
+        (item) =>
+          item.message === message &&
+          now - (item._ts || 0) < DEDUP_WINDOW_MS
+      );
+      if (existingIdx !== -1) {
+        // Update timestamp + increment count on existing entry
+        const updated = [...prev];
+        const existing = updated[existingIdx];
+        const count = (existing.count || 1) + 1;
+        updated[existingIdx] = {
+          ...existing,
+          timestamp: new Date().toLocaleTimeString(),
+          _ts: now,
+          count,
+          message: existing._baseMessage || message,
+          _baseMessage: existing._baseMessage || message,
+        };
+        return updated;
+      }
+      // New unique entry
+      persisted.activityIdCounter += 1;
+      return [
         {
           id: `activity-${persisted.activityIdCounter}`,
           timestamp: new Date().toLocaleTimeString(),
+          _ts: now,
+          _baseMessage: message,
           message,
           type,
+          count: 1,
         },
         ...prev,
-      ].slice(0, 50)
-    );
+      ].slice(0, 50);
+    });
   }, []);
 
   const applyBackendHealthResult = useCallback((healthData) => {
@@ -266,6 +293,12 @@ export function DroneDataProvider({ children }) {
           bme_temp: s.temperature,
           bme_humidity: s.humidity,
           eqs: s.eqs,
+          // Map all 5 derived indices returned by the updated /api/latest endpoint
+          smoke_index:       s.smoke_index       ?? prev.smoke_index,
+          voc_index:         s.voc_index         ?? prev.voc_index,
+          air_quality_index: s.air_quality_index ?? s.eqs ?? prev.air_quality_index,
+          hazard_level:      s.hazard_level      ?? prev.hazard_level,
+          pollution_score:   s.pollution_score   ?? prev.pollution_score,
         }));
       }
       if (latest.prediction) {

@@ -94,7 +94,7 @@ function DroneMapInner() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="glass card-sensor"
+      className="glass card-sensor h-full flex flex-col justify-between"
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
@@ -116,7 +116,7 @@ function DroneMapInner() {
       {/* Map Container */}
       <div
         className="relative overflow-hidden"
-        style={{ borderRadius: '12px', height: '350px' }}
+        style={{ borderRadius: '12px', height: '220px' }}
       >
         {hasValidPosition ? (
           <MapContainer
@@ -197,9 +197,9 @@ function DroneMapInner() {
           </Marker>
         </MapContainer>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-            <MapIcon className="text-slate-400 mb-2" size={32} />
-            <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Waiting for coordinates</p>
+          <div className="flex flex-col items-center justify-center h-full bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 py-6">
+            <MapIcon className="text-slate-400 mb-1" size={16} />
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Waiting for GPS telemetry</p>
           </div>
         )}
 

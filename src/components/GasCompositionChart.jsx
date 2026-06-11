@@ -48,17 +48,16 @@ export default function GasCompositionChart() {
           <span className="text-[9px] uppercase tracking-wider text-blue-600 font-bold">LIVE MODEL OUTPUT</span>
         </div>
       </div>
-      
-      <div className="flex-1 min-h-[220px] relative">
+      <div className="flex-grow min-h-[160px] relative mt-2">
         {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={180}>
             <PieChart>
               <Pie
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={80}
+                innerRadius={50}
+                outerRadius={70}
                 paddingAngle={2}
                 dataKey="value"
                 stroke="none"
@@ -70,18 +69,17 @@ export default function GasCompositionChart() {
               <Tooltip content={<CustomTooltip />} />
               <Legend 
                 verticalAlign="bottom" 
-                height={36} 
+                height={32} 
                 iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: '11px', fontWeight: 600 }}
+                iconSize={6}
+                wrapperStyle={{ fontSize: '10px', fontWeight: 600 }}
               />
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
-            <Activity className="opacity-20 mb-2" size={32} />
-            <span className="text-sm font-semibold">Awaiting Telemetry</span>
-            <span className="text-xs">No distribution data</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 italic text-xs">
+            <Activity className="opacity-20 mb-1 animate-pulse" size={20} />
+            <span>Waiting for prediction data</span>
           </div>
         )}
       </div>

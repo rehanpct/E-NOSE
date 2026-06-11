@@ -50,17 +50,35 @@ class AQIService:
 
     def calculate_indices(self, normalized_data, eqs):
         """Derived air-quality indices from normalized sensor readings (0-100 scale)."""
-        mq2 = normalized_data.get('mq2', 0)
-        mq5 = normalized_data.get('mq5', 0)
-        mq9 = normalized_data.get('mq9', 0)
+        mq2   = normalized_data.get('mq2',   0)
+        mq5   = normalized_data.get('mq5',   0)
+        mq9   = normalized_data.get('mq9',   0)
         mq135 = normalized_data.get('mq135', 0)
-        pollution = round(max(0.0, min(100.0, 100.0 - eqs)), 2)
+
+        # Smoke Index: MQ-2 (combustible/smoke, 60%) + MQ-9 (CO/combustible, 40%)
+        smoke_index = round(min(100.0, mq2 * 0.6 + mq9 * 0.4), 2)
+
+        # VOC Index: MQ-135 (air quality / VOC primary, 75%) + MQ-5 (organic vapours, 25%)
+        voc_index = round(min(100.0, mq135 * 0.75 + mq5 * 0.25), 2)
+
+        # Air Quality Index: EQS score (already 0-100, 100 = clean)
+        air_quality_index = round(eqs, 2)
+
+        # Hazard Level: sensor-weighted composite (before gas-type boost applied in app.py)
+        # MQ-2=30%, MQ-5=20%, MQ-9=20%, MQ-135=30%
+        hazard_level = round(
+            min(100.0, mq2 * 0.30 + mq5 * 0.20 + mq9 * 0.20 + mq135 * 0.30), 2
+        )
+
+        # Pollution Score: inverse of EQS — higher pollution = lower environmental quality
+        pollution_score = round(max(0.0, min(100.0, 100.0 - eqs)), 2)
+
         return {
-            'smoke_index': round(mq2, 2),
-            'voc_index': round(mq135, 2),
-            'air_quality_index': round(eqs, 2),
-            'hazard_level': round(max(mq2, mq5, mq9, mq135), 2),
-            'pollution_score': pollution,
+            'smoke_index':      smoke_index,
+            'voc_index':        voc_index,
+            'air_quality_index': air_quality_index,
+            'hazard_level':     hazard_level,
+            'pollution_score':  pollution_score,
         }
 
 aqi_engine = AQIService()
