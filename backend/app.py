@@ -116,6 +116,18 @@ def process_sensor_data(data):
         db.session.add(reading)
 
         # ── 5. Run ML gas-type prediction ────────────────────────────
+        
+       # ── 5. Run ML gas-type prediction ────────────────────────────
+
+        print("\n========== ML INPUT ==========")
+        print(f"MQ2={mq2}")
+        print(f"MQ5={mq5}")
+        print(f"MQ9={mq9}")
+        print(f"MQ135={mq135}")
+        print(f"TEMP={temperature}")
+        print(f"HUMIDITY={humidity}")
+        print("==============================")
+
         pred_result = predictor.predict(
             mq2,
             mq5,
@@ -124,6 +136,10 @@ def process_sensor_data(data):
             temperature,
             humidity
         )
+
+        print("\n========== ML OUTPUT ==========")
+        print(pred_result)
+        print("==============================")
 
         prediction = Prediction(
             predicted_gas=pred_result['gas'],

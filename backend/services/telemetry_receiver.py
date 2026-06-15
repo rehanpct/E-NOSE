@@ -251,6 +251,15 @@ class TelemetryReceiver:
                 name = name.rstrip('\x00').strip()
 
                 value = msg.value
+              
+
+                logger.info(
+                    "NAMED_VALUE_FLOAT: %s = %s",
+                    name,
+                    value
+                )
+
+
 
                 self.message_count += 1
                 self.last_message_time = datetime.utcnow()
