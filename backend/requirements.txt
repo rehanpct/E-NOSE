@@ -11,3 +11,7 @@ joblib==1.4.0
 python-dotenv==1.0.1
 eventlet==0.36.1
 Flask-Migrate==4.0.5
+# ── MAVLink telemetry support ──
+pymavlink==2.4.41
+pyserial==3.5
+

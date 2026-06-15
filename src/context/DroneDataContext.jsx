@@ -413,6 +413,8 @@ export function DroneDataProvider({ children }) {
     };
 
     const handleSensorUpdate = (sensorData) => {
+      console.log("ENTERED handleSensorUpdate");
+      console.log(sensorData);
       console.log('[TELEMETRY] Sensor reading received');
 
       const now = new Date();
@@ -460,18 +462,25 @@ export function DroneDataProvider({ children }) {
         sensor_health_pct: sensorHealthData?.pct ?? prev.sensor_health_pct,
       }));
 
-      setSensorHistory((prev) => {
-        const ts = new Date(sensorData.timestamp).toLocaleTimeString();
-        return {
-          timestamps: [...prev.timestamps, ts].slice(-60),
-          dht_temp: [...prev.dht_temp, sensorData.temperature].slice(-60),
-          dht_humidity: [...prev.dht_humidity, sensorData.humidity].slice(-60),
-          mq2: [...prev.mq2, sensorData.normalized_mq2].slice(-60),
-          mq5: [...prev.mq5, sensorData.normalized_mq5].slice(-60),
-          mq9: [...prev.mq9, sensorData.normalized_mq9].slice(-60),
-          mq135: [...prev.mq135, sensorData.normalized_mq135].slice(-60),
-        };
-      });
+    setSensorHistory((prev) => {
+  console.log("FULL SENSOR UPDATE =", sensorData);
+
+    const ts = sensorData.timestamp
+      ? new Date(sensorData.timestamp).toLocaleTimeString()
+      : new Date().toLocaleTimeString();
+
+    return {
+      timestamps: [...prev.timestamps, ts].slice(-60),
+
+      dht_temp: [...prev.dht_temp, sensorData.temperature ?? 0].slice(-60),
+      dht_humidity: [...prev.dht_humidity, sensorData.humidity ?? 0].slice(-60),
+
+      mq2: [...prev.mq2, sensorData.normalized_mq2 ?? sensorData.raw_mq2 ?? 0].slice(-60),
+      mq5: [...prev.mq5, sensorData.normalized_mq5 ?? sensorData.raw_mq5 ?? 0].slice(-60),
+      mq9: [...prev.mq9, sensorData.normalized_mq9 ?? sensorData.raw_mq9 ?? 0].slice(-60),
+      mq135: [...prev.mq135, sensorData.normalized_mq135 ?? sensorData.raw_mq135 ?? 0].slice(-60),
+    };
+  });
 
       snapshotBuffer.current.push(sensorData);
       if (snapshotBuffer.current.length > 500) snapshotBuffer.current.shift();

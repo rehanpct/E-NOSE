@@ -31,11 +31,8 @@ function CustomTooltip({ active, payload, label }) {
     </div>
   );
 }
-
 export default function RealTimeGasChart() {
   const { sensorHistory } = useDroneData();
-
-  console.log("RealTimeGasChart render");
 
   const chartData = sensorHistory.timestamps.map((ts, i) => ({
     time: ts,
@@ -45,6 +42,11 @@ export default function RealTimeGasChart() {
     'MQ-135': sensorHistory.mq135[i] ?? 0,
   }));
 
+  console.log("RealTimeGasChart render");
+  console.log("sensorHistory =", sensorHistory);
+  console.log("chartData length =", chartData.length);
+  console.log("chartData =", chartData);
+
   const lineColors = {
     'MQ-2': '#ef4444',
     'MQ-5': '#f59e0b',
@@ -53,6 +55,8 @@ export default function RealTimeGasChart() {
   };
 
   const isEmpty = chartData.length === 0;
+
+
 
   return (
     <motion.div

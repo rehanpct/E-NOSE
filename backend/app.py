@@ -20,6 +20,9 @@ from services.normalization_service import normalizer
 from services.aqi_service import aqi_engine
 from services.training_service import trainer
 from services.dataset_service import dataset_service
+# ── NEW: Import the MAVLink telemetry receiver service ───────────────
+from services.telemetry_receiver import telemetry_receiver
+print("APP.PY LOADED")
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -32,16 +35,38 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 app.config['START_TIME'] = datetime.utcnow()
 
 
+# ═════════════════════════════════════════════════════════════════════
+# REFACTORED: Core processing logic extracted into a standalone
+# function so that it can be called from BOTH the HTTP endpoint
+# AND the MAVLink telemetry receiver.
+# ═════════════════════════════════════════════════════════════════════
 
-@app.route('/api/sensor-data', methods=['POST'])
-def receive_sensor_data():
-    data = request.json
+def process_sensor_data(data):
+    """
+    Process a complete sensor data dictionary through the full pipeline:
+      1. Parse & validate sensor values
+      2. Normalize MQ sensor readings
+      3. Calculate EQS (Environmental Quality Score)
+      4. Store SensorReading in database
+      5. Run ML prediction and store result
+      6. Evaluate alert thresholds
+      7. Record dataset sample (if collection is active)
+      8. Emit Socket.IO events to connected dashboards
 
-    if not data:
-        return jsonify({"error": "No JSON payload provided"}), 400
+    Parameters
+    ----------
+    data : dict
+        Must contain keys: mq2, mq5, mq9, mq135, temperature, humidity.
+        Values can be numeric or string-numeric (will be cast to float).
 
+    Returns
+    -------
+    dict
+        {"status": "success", ...} on success, or
+        {"status": "error", "message": "..."} on failure.
+    """
     try:
-        # Parse incoming data
+        # ── 1. Parse incoming sensor values ──────────────────────────
         mq2 = float(data.get('mq2', 0))
         mq5 = float(data.get('mq5', 0))
         mq9 = float(data.get('mq9', 0))
@@ -50,11 +75,11 @@ def receive_sensor_data():
         humidity = float(data.get('humidity', 0))
 
         print("\n==============================")
-        print("ESP32 DATA RECEIVED")
+        print("SENSOR DATA RECEIVED")
         print(data)
         print("==============================")
 
-        # Normalize
+        # ── 2. Normalize MQ sensor readings ──────────────────────────
         raw_dict = {
             'mq2': mq2,
             'mq5': mq5,
@@ -64,13 +89,14 @@ def receive_sensor_data():
 
         norm_dict = normalizer.process(raw_dict)
 
+        # ── 3. Calculate Environmental Quality Score ─────────────────
         eqs_score = aqi_engine.calculate_eqs(
             norm_dict,
             temperature,
             humidity
         )
 
-        # Store reading
+        # ── 4. Store the raw + normalized reading in the database ────
         reading = SensorReading(
             raw_mq2=mq2,
             raw_mq5=mq5,
@@ -89,7 +115,7 @@ def receive_sensor_data():
 
         db.session.add(reading)
 
-        # Prediction
+        # ── 5. Run ML gas-type prediction ────────────────────────────
         pred_result = predictor.predict(
             mq2,
             mq5,
@@ -119,11 +145,13 @@ def receive_sensor_data():
 
         db.session.add(prediction)
 
+        # ── 6. Evaluate alert thresholds ─────────────────────────────
         alerts = evaluate_thresholds(raw_dict)
 
         for alert in alerts:
             db.session.add(alert)
 
+        # ── 7. Record dataset sample (if collection is active) ───────
         dataset_service.record_sample(
             raw_dict,
             norm_dict,
@@ -133,7 +161,7 @@ def receive_sensor_data():
 
         db.session.commit()
 
-        # Create final payload
+        # ── 8. Build payload and emit Socket.IO events ───────────────
         reading_dict = reading.to_dict()
 
         indices = aqi_engine.calculate_indices(
@@ -181,20 +209,43 @@ def receive_sensor_data():
 
         print("SOCKET EVENTS SENT\n")
 
-        return jsonify({
+        return {
             "status": "success",
             "message": "Data processed",
             "distribution": pred_dict['distribution']
-        }), 201
+        }
 
     except Exception as e:
         db.session.rollback()
-
         print("ERROR:", e)
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
-        return jsonify({
-            "error": str(e)
-        }), 500
+
+# ═════════════════════════════════════════════════════════════════════
+# HTTP ENDPOINT — now a thin wrapper around process_sensor_data()
+# ═════════════════════════════════════════════════════════════════════
+
+@app.route('/api/sensor-data', methods=['POST'])
+def receive_sensor_data():
+    """
+    Original HTTP endpoint for receiving sensor data from the ESP32.
+    Still fully functional — the ESP32 can POST JSON directly when
+    using Wi-Fi instead of MAVLink telemetry.
+    """
+    data = request.json
+
+    if not data:
+        return jsonify({"error": "No JSON payload provided"}), 400
+
+    result = process_sensor_data(data)
+
+    if result.get('status') == 'error':
+        return jsonify({"error": result['message']}), 500
+
+    return jsonify(result), 201
 
 @app.route('/api/system-health', methods=['GET'])
 def system_health():
@@ -222,6 +273,9 @@ def system_health():
     # Predictions in the last 60 seconds for rate metrics
     one_min_ago = datetime.utcnow() - timedelta(minutes=1)
     predictions_last_min = Prediction.query.filter(Prediction.timestamp >= one_min_ago).count()
+
+    # ── NEW: Include telemetry link status in system health ──────────
+    telemetry_status = telemetry_receiver.get_status()
             
     return jsonify({
         "backend": "online",
@@ -235,7 +289,9 @@ def system_health():
         "total_predictions": total_predictions,
         "total_sensor_readings": total_sensor_readings,
         "predictions_per_minute": predictions_last_min,
-        "active_model": predictor.model_filename or "None"
+        "active_model": predictor.model_filename or "None",
+        # ── NEW: Telemetry link info ─────────────────────────────────
+        "telemetry": telemetry_status,
     })
 
 @app.route('/api/model-debug', methods=['GET'])
@@ -514,6 +570,20 @@ def latest_telemetry():
     record = Telemetry.query.order_by(Telemetry.timestamp.desc()).first()
     return jsonify(record.to_dict() if record else None)
 
+
+# ═════════════════════════════════════════════════════════════════════
+# NEW ENDPOINT: Telemetry link status
+# ═════════════════════════════════════════════════════════════════════
+
+@app.route('/api/telemetry/status', methods=['GET'])
+def telemetry_link_status():
+    """
+    Returns the current status of the MAVLink telemetry receiver:
+    connection state, port, baud, last message time, message count.
+    """
+    return jsonify(telemetry_receiver.get_status())
+
+
 @app.route('/api/backup', methods=['POST'])
 def run_backup():
     try:
@@ -542,13 +612,37 @@ def run_backup():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
+    print("MAIN BLOCK EXECUTED")
+    print("TELEMETRY_ENABLED =", app.config.get('TELEMETRY_ENABLED'))
+    print("TELEMETRY_PORT =", app.config.get('TELEMETRY_PORT'))
 
     with app.app_context():
         db.create_all()
+
+    # ── NEW: Start the MAVLink telemetry receiver if enabled ─────────
+    # The receiver runs in a daemon thread alongside the Flask/SocketIO
+    # event loop.  It calls process_sensor_data() whenever a complete
+    # set of sensor values has been received over the radio link.
+    if app.config.get('TELEMETRY_ENABLED'):
+        import os
+        print("Starting telemetry receiver, PID =", os.getpid())
+        telemetry_receiver.start(
+            app=app,
+            socketio=socketio,
+            process_fn=process_sensor_data,
+            port=app.config['TELEMETRY_PORT'],
+            baud=app.config['TELEMETRY_BAUD'],
+        )
+        print(f"\n[TELEMETRY] MAVLink telemetry receiver ENABLED")
+        print(f"   Port: {app.config['TELEMETRY_PORT']}")
+        print(f"   Baud: {app.config['TELEMETRY_BAUD']}\n")
+    else:
+        print("\n[WARNING] MAVLink telemetry receiver DISABLED (set TELEMETRY_ENABLED=true to activate)\n")
 
     socketio.run(
         app,
         host='0.0.0.0',
         port=5000,
-        debug=True
+        debug=True,
+        use_reloader=False
     )
